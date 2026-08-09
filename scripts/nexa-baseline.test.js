@@ -1,0 +1,7 @@
+'use strict';
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('fs');const os=require('os');const path=require('path');
+const {validateGlb,safeName}=require('../src/backend/nexa-worker');
+function makeGlb(){const json=Buffer.from(JSON.stringify({asset:{version:'2.0'},scene:0,scenes:[{nodes:[]}]}),'utf8');const padded=Buffer.concat([json,Buffer.alloc((4-json.length%4)%4,0x20)]);const total=12+8+padded.length;const b=Buffer.alloc(total);b.write('glTF',0,'ascii');b.writeUInt32LE(2,4);b.writeUInt32LE(total,8);b.writeUInt32LE(padded.length,12);b.writeUInt32LE(0x4E4F534A,16);padded.copy(b,20);return b}
+test('safeName removes unsafe path characters',()=>{assert.equal(safeName('../My Model?.png'),'My-Model-.png')});
+test('validateGlb accepts a structurally valid GLB 2.0',async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'nexa3d-'));const file=path.join(dir,'test.glb');fs.writeFileSync(file,makeGlb());const result=await validateGlb(file);assert.equal(result.buffer.subarray(0,4).toString('ascii'),'glTF');assert.equal(result.sha256.length,64);fs.rmSync(dir,{recursive:true,force:true})});
+test('validateGlb rejects a fake file',async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'nexa3d-'));const file=path.join(dir,'bad.glb');fs.writeFileSync(file,'not a glb');await assert.rejects(()=>validateGlb(file));fs.rmSync(dir,{recursive:true,force:true})});

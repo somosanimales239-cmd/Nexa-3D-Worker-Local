@@ -1,0 +1,26 @@
+'use strict';
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('nexa3d', {
+  bootstrap: () => ipcRenderer.invoke('app:bootstrap'),
+  saveSettings: (payload) => ipcRenderer.invoke('settings:save', payload),
+  probeSystem: () => ipcRenderer.invoke('system:probe'),
+  testConnection: () => ipcRenderer.invoke('connection:test'),
+  startWorker: () => ipcRenderer.invoke('worker:start'),
+  stopWorker: () => ipcRenderer.invoke('worker:stop'),
+  runOnce: () => ipcRenderer.invoke('worker:once'),
+  getWorkerStatus: () => ipcRenderer.invoke('worker:status'),
+  installStableFast3D: () => ipcRenderer.invoke('engine:install-sf3d'),
+  testHunyuan: () => ipcRenderer.invoke('engine:test-hunyuan'),
+  probeEngines: () => ipcRenderer.invoke('engine:probe'),
+  testGeneration: (payload) => ipcRenderer.invoke('engine:test-generation', payload),
+  pickImage: () => ipcRenderer.invoke('file:pick-image'),
+  pickFolder: () => ipcRenderer.invoke('file:pick-folder'),
+  revealPath: (target) => ipcRenderer.invoke('path:reveal', target),
+  openPath: (target) => ipcRenderer.invoke('path:open', target),
+  openExternal: (url) => ipcRenderer.invoke('external:open', url),
+  onWorkerStatus: (callback) => ipcRenderer.on('worker:status-changed', (_e, payload) => callback(payload)),
+  onWorkerLog: (callback) => ipcRenderer.on('worker:log', (_e, payload) => callback(payload)),
+  onEngineLog: (callback) => ipcRenderer.on('engine:log', (_e, payload) => callback(payload)),
+  onJob: (callback) => ipcRenderer.on('worker:job', (_e, payload) => callback(payload))
+});

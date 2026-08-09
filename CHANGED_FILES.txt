@@ -1,0 +1,20 @@
+CORRECTED PROJECT — Nexa 3D Worker Local v1.0.1
+
+Modified:
+- main.js
+- src/backend/engine-manager.js
+- src/backend/nexa-worker.js
+- scripts/validate-delivery.js
+- package.json
+- nexa.project.json
+- src/index.html
+- INSTALLATION.md
+- VALIDATION_REPORT.txt
+
+Added:
+- .github/workflows/nexa-windows-build.yml
+
+Reason:
+- Remove URL/line-splitting regex constructs that triggered Nexa's extensionless delimiter scanner.
+- Add the selected Windows target workflow required before build validation.
+- Remove a validation-report separator that matched Nexa's merge-conflict heuristic.

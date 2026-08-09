@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nexa 3D Worker Local</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">N3</div>
+        <div><strong>Nexa 3D</strong><span>Worker Local</span></div>
+      </div>
+      <nav>
+        <button class="nav-item active" data-page="dashboard"><span>◈</span> Dashboard</button>
+        <button class="nav-item" data-page="connection"><span>⌁</span> Nexa Connection</button>
+        <button class="nav-item" data-page="engine"><span>⬡</span> Engine Setup</button>
+        <button class="nav-item" data-page="test"><span>◇</span> Local Image → 3D Test</button>
+        <button class="nav-item" data-page="logs"><span>≡</span> Activity & Logs</button>
+        <button class="nav-item" data-page="settings"><span>⚙</span> Settings</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="mini-status"><i id="sideStatusDot"></i><div><b id="sideStatus">Stopped</b><small id="sideProvider">Stable Fast 3D</small></div></div>
+        <span class="version">v1.0.1 · No OpenAI</span>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div><span class="eyebrow">LOCAL GPU DELIVERY NODE</span><h1 id="pageTitle">Worker Dashboard</h1></div>
+        <div class="top-actions">
+          <button class="btn ghost" id="refreshBtn">Refresh</button>
+          <button class="btn danger hidden" id="stopWorkerBtn">Stop Worker</button>
+          <button class="btn primary" id="startWorkerBtn">Start Worker</button>
+        </div>
+      </header>
+
+      <div id="toast" class="toast hidden"></div>
+
+      <section class="page active" data-page-panel="dashboard">
+        <div class="hero-panel">
+          <div>
+            <span class="pill good">LOCAL IMAGE → REAL GLB</span>
+            <h2>Your PC becomes the 3D generation engine for Nexa.</h2>
+            <p>Nexa 3D Studio queues the image. This installed worker securely pulls the job, runs the local 3D engine, validates the GLB, and returns it to your Nexa library.</p>
+            <div class="hero-actions">
+              <button class="btn primary" id="heroStartBtn">Start accepting jobs</button>
+              <button class="btn secondary" data-goto="connection">Configure Nexa</button>
+            </div>
+          </div>
+          <div class="worker-orbit">
+            <div class="orbit ring-one"></div><div class="orbit ring-two"></div><div class="core" id="heroCore">N3</div>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric"><span>Worker</span><strong id="metricWorker">Stopped</strong><small id="metricHeartbeat">No heartbeat yet</small></article>
+          <article class="metric"><span>Engine</span><strong id="metricEngine">Stable Fast 3D</strong><small id="metricEngineReady">Checking…</small></article>
+          <article class="metric"><span>GPU</span><strong id="metricGpu">Checking…</strong><small id="metricGpuMemory"></small></article>
+          <article class="metric"><span>Completed this session</span><strong id="metricProcessed">0</strong><small>Returned to Nexa</small></article>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head"><div><span class="kicker">LIVE JOB</span><h3>Current generation</h3></div><span class="state-badge" id="jobStateBadge">Idle</span></div>
+            <div class="job-empty" id="jobEmpty"><div class="empty-icon">◇</div><b>Waiting for a Nexa 3D job</b><p>Start the worker and create Image→3D from Nexa 3D Studio.</p></div>
+            <div class="job-live hidden" id="jobLive">
+              <div class="job-row"><span>Asset</span><strong id="jobAsset">—</strong></div>
+              <div class="job-row"><span>Stage</span><strong id="jobStage">—</strong></div>
+              <div class="progress-track"><div id="jobProgressBar"></div></div>
+              <div class="progress-text"><span id="jobProgressMessage">Processing</span><b id="jobProgressValue">0%</b></div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head"><div><span class="kicker">SYSTEM</span><h3>Local readiness</h3></div><button class="text-btn" data-goto="engine">Engine setup</button></div>
+            <div class="check-list">
+              <div class="check-item"><i id="checkPython"></i><div><b>Python</b><small id="pythonDetail">Checking…</small></div></div>
+              <div class="check-item"><i id="checkGit"></i><div><b>Git</b><small id="gitDetail">Checking…</small></div></div>
+              <div class="check-item"><i id="checkGpu"></i><div><b>NVIDIA GPU</b><small id="gpuDetail">Checking…</small></div></div>
+              <div class="check-item"><i id="checkNexa"></i><div><b>Nexa connection</b><small id="nexaDetail">Not tested</small></div></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" data-page-panel="connection">
+        <div class="section-intro"><div><span class="eyebrow">STEP 1</span><h2>Connect to Nexa 3D Studio</h2><p>Copy the API base and Worker Token from <b>Nexa 3D Studio → Settings</b>. The token is encrypted by Windows when Electron safe storage is available.</p></div></div>
+        <div class="grid two">
+          <article class="card form-card">
+            <label>Nexa worker API base<input id="nexaApiBase" placeholder="https://your-domain.com/api/3d/"></label>
+            <label>Worker token<input id="workerToken" type="password" placeholder="Paste token from Nexa 3D Studio Settings"></label>
+            <label>Worker ID<input id="workerId" placeholder="my-pc-nexa3d"></label>
+            <label>Provider<select id="provider"><option value="stable_fast_3d">Stable Fast 3D — Local</option><option value="hunyuan3d_api">Hunyuan3D — Local API</option></select></label>
+            <div class="button-row"><button class="btn primary" id="saveConnectionBtn">Save connection</button><button class="btn secondary" id="testConnectionBtn">Test connection</button></div>
+          </article>
+          <article class="card accent-card">
+            <span class="kicker">SAFE ARCHITECTURE</span><h3>No inbound port required</h3>
+            <div class="flow-stack"><span>Nexa website queues image</span><b>↓ HTTPS</b><span>Nexa 3D Worker Local polls</span><b>↓ LOCAL</b><span>GPU engine creates GLB</span><b>↓ HTTPS</b><span>GLB returns to Nexa Library</span></div>
+            <p class="muted">The worker never receives your GitHub token and does not read Nexa's database.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" data-page-panel="engine">
+        <div class="section-intro"><div><span class="eyebrow">STEP 2</span><h2>Prepare the local 3D engine</h2><p>Stable Fast 3D is the default local engine. Windows support is experimental upstream and the model requires approved Hugging Face access. Hunyuan3D can be used through its local API instead.</p></div><button class="btn secondary" id="probeEngineBtn">Probe engines</button></div>
+        <div class="grid two">
+          <article class="card engine-card">
+            <div class="engine-title"><div class="engine-logo">SF</div><div><span class="pill">DEFAULT</span><h3>Stable Fast 3D</h3><p>Single-image reconstruction to textured GLB.</p></div></div>
+            <div class="engine-status" id="sf3dStatus">Not checked</div>
+            <label>Repository folder<input id="sf3dRepo"></label>
+            <label>Engine Python<input id="sf3dPython"></label>
+            <label>Hugging Face token <span class="optional">optional here; required by the gated model</span><input id="hfToken" type="password" placeholder="hf_..."></label>
+            <label class="check-line"><input type="checkbox" id="forceCpu"> Force CPU mode <span>Much slower; useful for troubleshooting.</span></label>
+            <div class="button-row"><button class="btn primary" id="installSf3dBtn">Install / Repair Stable Fast 3D</button><button class="btn secondary external-link" data-url="https://github.com/Stability-AI/stable-fast-3d">Official repository</button></div>
+          </article>
+          <article class="card engine-card">
+            <div class="engine-title"><div class="engine-logo alt">HY</div><div><span class="pill neutral">OPTIONAL</span><h3>Hunyuan3D Local API</h3><p>Connect this app to a Hunyuan3D server running on the same PC.</p></div></div>
+            <div class="engine-status" id="hunyuanStatus">Not checked</div>
+            <label>Local API URL<input id="hunyuanUrl" placeholder="http://127.0.0.1:8080"></label>
+            <div class="button-row"><button class="btn primary" id="testHunyuanBtn">Test local API</button><button class="btn secondary external-link" data-url="https://github.com/Tencent-Hunyuan/Hunyuan3D-2">Official repository</button></div>
+            <div class="license-note">Provider/model licenses are separate from Nexa. Review the current upstream license before commercial deployment.</div>
+          </article>
+        </div>
+        <article class="card console-card"><div class="card-head"><div><span class="kicker">INSTALLER OUTPUT</span><h3>Engine setup log</h3></div><button class="text-btn" id="clearEngineLog">Clear</button></div><pre id="engineLog">Ready.</pre></article>
+      </section>
+
+      <section class="page" data-page-panel="test">
+        <div class="section-intro"><div><span class="eyebrow">STEP 3 · OPTIONAL TEST</span><h2>Generate a GLB directly on this PC</h2><p>Use the same selected engine without Nexa to verify that Image→3D is actually working before accepting website jobs.</p></div></div>
+        <div class="grid two">
+          <article class="card test-card">
+            <div class="drop-preview" id="imagePreview"><div><span>◇</span><b>No image selected</b><small>PNG · JPG · WEBP</small></div></div>
+            <input type="hidden" id="testImagePath">
+            <input type="hidden" id="testOutputDir">
+            <div class="button-row"><button class="btn secondary" id="chooseImageBtn">Choose image</button><button class="btn secondary" id="chooseOutputBtn">Choose output folder</button></div>
+            <div class="selected-path" id="testOutputLabel">Output: application LocalTests folder</div>
+            <label>Quality<select id="testQuality"><option value="draft">Draft</option><option value="standard" selected>Standard</option><option value="high">High</option></select></label>
+            <button class="btn primary wide" id="generateTestBtn">Generate Local 3D Model</button>
+          </article>
+          <article class="card result-card">
+            <div class="result-orb" id="testOrb">GLB</div><span class="kicker">LOCAL TEST RESULT</span><h3 id="testResultTitle">Waiting for a test</h3><p id="testResultText">After the engine finishes, the validated GLB will be copied to your selected output folder.</p>
+            <div class="progress-track"><div id="testProgressBar"></div></div><div class="progress-text"><span id="testProgressStage">Idle</span><b id="testProgressValue">0%</b></div>
+            <button class="btn secondary hidden" id="revealTestBtn">Show generated GLB</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" data-page-panel="logs">
+        <div class="section-intro"><div><span class="eyebrow">DIAGNOSTICS</span><h2>Activity & Logs</h2><p>Live worker and setup messages. Persistent logs are also stored under the application's Windows data folder.</p></div><div class="button-row"><button class="btn secondary" id="openLogsBtn">Open logs folder</button><button class="btn ghost" id="clearWorkerLog">Clear view</button></div></div>
+        <article class="card console-card large"><pre id="workerLog">Nexa 3D Worker Local ready.</pre></article>
+      </section>
+
+      <section class="page" data-page-panel="settings">
+        <div class="section-intro"><div><span class="eyebrow">LOCAL SETTINGS</span><h2>Worker behavior</h2><p>These options affect only this installed worker.</p></div></div>
+        <article class="card form-card narrow">
+          <label>Poll interval (seconds)<input id="pollSeconds" type="number" min="5" max="300"></label>
+          <label>HTTP timeout (seconds)<input id="httpTimeout" type="number" min="10" max="600"></label>
+          <label>3D engine timeout (seconds)<input id="providerTimeout" type="number" min="60" max="14400"></label>
+          <label class="check-line"><input type="checkbox" id="autoStart"> Start worker automatically when the app opens</label>
+          <label class="check-line"><input type="checkbox" id="keepTemp"> Keep temporary job files for diagnostics</label>
+          <div class="button-row"><button class="btn primary" id="saveSettingsBtn">Save settings</button><button class="btn secondary" id="openDataBtn">Open app data folder</button></div>
+        </article>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

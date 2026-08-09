@@ -1,0 +1,22 @@
+NEXA 3D WORKER LOCAL v1.0.1 — CORRECTED SOURCE VALIDATION
+
+Target: Electron / Windows x64
+OpenAI: Not used
+Worker protocol: Nexa 3D Studio Update 8 Web
+
+CORRECTED  main.js — Nexa delimiter-scanner compatible
+CORRECTED  src/backend/engine-manager.js — Nexa delimiter-scanner compatible
+CORRECTED  src/backend/nexa-worker.js — Nexa delimiter-scanner compatible
+CORRECTED  VALIDATION_REPORT.txt — no merge-conflict-like separator
+ADDED      .github/workflows/nexa-windows-build.yml
+
+PASS  JavaScript syntax
+PASS  Nexa extensionless delimiter scan on every JavaScript file
+PASS  Delivery validator
+PASS  Project isolation validator
+PASS  Node baseline tests
+PASS  Required Windows workflow present
+PASS  No unresolved merge conflict markers
+PASS  No OpenAIClient integration
+
+The Windows installer itself is built by the existing Nexa GitHub Windows target.

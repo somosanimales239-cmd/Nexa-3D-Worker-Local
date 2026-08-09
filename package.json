@@ -1,0 +1,76 @@
+{
+  "name": "nexa-3d-worker-local",
+  "version": "1.0.1",
+  "description": "Local Windows GPU worker for Nexa 3D Studio image-to-3D generation",
+  "main": "main.js",
+  "author": "Nexa App Builder Pro",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && node --check src/backend/config-store.js && node --check src/backend/system-probe.js && node --check src/backend/engine-manager.js && node --check src/backend/nexa-worker.js && npm run validate:delivery && npm run validate:project && npm test",
+    "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
+    "validate:delivery": "node scripts/validate-delivery.js",
+    "validate:project": "node scripts/validate-project.js",
+    "test": "node --test scripts/nexa-baseline.test.js",
+    "ui:smoke": "electron scripts/ui-smoke.js"
+  },
+  "devDependencies": {
+    "electron": "43.1.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.nexa.3dworkerlocal",
+    "productName": "Nexa 3D Worker Local",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json",
+      "README.md"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nexa 3D Worker Local",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
+      "allowElevation": true,
+      "perMachine": false,
+      "uninstallDisplayName": "Nexa 3D Worker Local",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
+    }
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
