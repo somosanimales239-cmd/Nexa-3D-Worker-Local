@@ -5,6 +5,6 @@
     "type": "electron-desktop",
     "platform": "windows-x64",
     "description": "Local image-to-3D GPU worker for Nexa 3D Studio. No OpenAI.",
-    "workspace_revision": "1.0.3",
-    "updated_at": "2026-08-09 14:02:36"
+    "workspace_revision": "1.0.5",
+    "updated_at": "2026-08-09 16:42:31"
 }
