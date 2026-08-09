@@ -1,20 +1,21 @@
-CORRECTED PROJECT — Nexa 3D Worker Local v1.0.1
+NEXA 3D WORKER LOCAL v1.0.2 — UI SMOKE FIX UPDATE
 
 Modified:
-- main.js
-- src/backend/engine-manager.js
-- src/backend/nexa-worker.js
-- scripts/validate-delivery.js
 - package.json
 - nexa.project.json
+- scripts/ui-smoke.js
+- src/backend/nexa-worker.js
 - src/index.html
-- INSTALLATION.md
 - VALIDATION_REPORT.txt
 
-Added:
-- .github/workflows/nexa-windows-build.yml
+Purpose:
+- Fix GitHub Actions Step 15: Run Electron UI smoke test.
+- Prevent child_process.spawn from receiving the Electron API object.
+- Continue the same Nexa 3D Worker Local project at application version 1.0.2.
 
-Reason:
-- Remove URL/line-splitting regex constructs that triggered Nexa's extensionless delimiter scanner.
-- Add the selected Windows target workflow required before build validation.
-- Remove a validation-report separator that matched Nexa's merge-conflict heuristic.
+Not modified:
+- .github/workflows/nexa-windows-build.yml
+- main.js
+- engine-manager.js
+- GitHub connection logic
+- Nexa App Builder Pro website
