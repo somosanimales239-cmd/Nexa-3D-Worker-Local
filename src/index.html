@@ -23,7 +23,7 @@
       </nav>
       <div class="sidebar-foot">
         <div class="mini-status"><i id="sideStatusDot"></i><div><b id="sideStatus">Stopped</b><small id="sideProvider">Stable Fast 3D</small></div></div>
-        <span class="version">v1.0.3 · No OpenAI</span>
+        <span class="version">v1.0.4 · No OpenAI</span>
       </div>
     </aside>
 
@@ -111,7 +111,9 @@
             <div class="engine-status" id="sf3dStatus">Not checked</div>
             <label>Repository folder<input id="sf3dRepo"></label>
             <label>Engine Python<input id="sf3dPython"></label>
-            <label>Hugging Face token <span class="optional">optional here; required by the gated model</span><input id="hfToken" type="password" placeholder="hf_..."></label>
+            <label>Hugging Face cache folder <span class="optional">large model downloads are forced here</span><input id="hfCacheDir" placeholder="D:\N3D\HuggingFace"></label>
+            <div class="button-row"><button class="btn secondary" id="chooseHfCacheBtn">Choose cache folder</button></div>
+            <label>Hugging Face token <span class="optional">required by the gated model</span><input id="hfToken" type="password" placeholder="hf_..."></label>
             <label class="check-line"><input type="checkbox" id="forceCpu"> Force CPU mode <span>Much slower; useful for troubleshooting.</span></label>
             <div class="button-row"><button class="btn primary" id="installSf3dBtn">Install / Repair Stable Fast 3D</button><button class="btn secondary external-link" data-url="https://github.com/Stability-AI/stable-fast-3d">Official repository</button></div>
           </article>

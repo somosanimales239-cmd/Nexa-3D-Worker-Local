@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -224,7 +224,19 @@ class NexaWorker {
     const env = { ...process.env };
     if (cfg.force_cpu) env.SF3D_USE_CPU = '1';
     if (cfg.hf_token) env.HF_TOKEN = cfg.hf_token;
-    await progressCb(20, 'Starting Stable Fast 3D', `Texture resolution ${textureResolution}px.`);
+    const hfCacheDir = String(cfg.hf_cache_dir || env.HF_HOME || '').trim();
+    if (hfCacheDir) {
+      const resolvedHfCache = path.resolve(hfCacheDir);
+      const resolvedHubCache = path.join(resolvedHfCache, 'hub');
+      await fsp.mkdir(resolvedHubCache, { recursive: true });
+      env.HF_HOME = resolvedHfCache;
+      env.HF_HUB_CACHE = resolvedHubCache;
+      env.HUGGINGFACE_HUB_CACHE = resolvedHubCache;
+      this.log(`[SF3D] Hugging Face cache: ${resolvedHubCache}`);
+    } else {
+      this.log('[SF3D] Hugging Face cache folder is not configured; the system default cache will be used.', 'warn');
+    }
+    await progressCb(20, 'Starting Stable Fast 3D', `Texture resolution ${textureResolution}px${hfCacheDir ? ` · HF cache ${path.resolve(hfCacheDir)}` : ''}.`);
     await new Promise((resolve, reject) => {
       const child = spawn(python, args, { cwd: repo, env, windowsHide: true, shell: false });
       this.currentChild = child;
@@ -290,10 +302,18 @@ class NexaWorker {
       : this.generateStableFast3D(image, outputDir, payload, progressCb);
   }
 
+  heavyWorkRoot() {
+    const cfg = this.store.get();
+    const hfCacheDir = String(cfg.hf_cache_dir || process.env.HF_HOME || '').trim();
+    return hfCacheDir ? path.join(path.resolve(hfCacheDir), 'nexa-worker-temp') : this.store.paths().work;
+  }
+
   async processJob(job) {
     const cfg = this.store.get();
     this.busy = true; this.currentJob = job; this.emitStatus();
-    const jobDir = path.join(this.store.paths().work, safeName(job.uuid));
+    const workRoot = this.heavyWorkRoot();
+    await fsp.mkdir(workRoot, { recursive: true });
+    const jobDir = path.join(workRoot, safeName(job.uuid));
     await fsp.rm(jobDir, { recursive: true, force: true });
     const inputDir = path.join(jobDir, 'input'), outputDir = path.join(jobDir, 'output');
     await fsp.mkdir(inputDir, { recursive: true }); await fsp.mkdir(outputDir, { recursive: true });
@@ -374,9 +394,11 @@ class NexaWorker {
     if (this.busy) throw new Error('The worker is busy with a Nexa job.');
     const image = String(payload.image || '');
     if (!fileExists(image)) throw new Error('Choose a valid JPG, PNG or WEBP image.');
-    const outputBase = String(payload.output_dir || path.join(this.store.paths().userData, 'LocalTests'));
+    const workRoot = this.heavyWorkRoot();
+    const outputBase = String(payload.output_dir || (String(this.store.get().hf_cache_dir || '').trim() ? path.join(path.resolve(this.store.get().hf_cache_dir), 'LocalTests') : path.join(this.store.paths().userData, 'LocalTests')));
     await fsp.mkdir(outputBase, { recursive: true });
-    const testDir = path.join(this.store.paths().work, `local-test-${Date.now()}`);
+    await fsp.mkdir(workRoot, { recursive: true });
+    const testDir = path.join(workRoot, `local-test-${Date.now()}`);
     const engineOutput = path.join(testDir, 'output');
     this.busy = true; this.emitStatus();
     try {

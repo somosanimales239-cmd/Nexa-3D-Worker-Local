@@ -20,6 +20,9 @@ class ConfigStore {
 
   defaults() {
     const sf3dRoot = path.join(this.engineRoot, 'stable-fast-3d');
+    const inheritedHfHome = String(process.env.HF_HOME || '').trim();
+    const inheritedHubCache = String(process.env.HF_HUB_CACHE || '').trim();
+    const hfCacheDir = inheritedHfHome || (inheritedHubCache ? path.dirname(inheritedHubCache) : '');
     return {
       nexa_api_base: '',
       provider: 'stable_fast_3d',
@@ -32,6 +35,7 @@ class ConfigStore {
       force_cpu: false,
       stable_fast_3d_repo: sf3dRoot,
       stable_fast_3d_python: path.join(sf3dRoot, '.venv', 'Scripts', 'python.exe'),
+      hf_cache_dir: hfCacheDir,
       hunyuan3d_api_url: 'http://127.0.0.1:8080',
       worker_token: '',
       hf_token: ''
@@ -92,7 +96,7 @@ class ConfigStore {
     const keys = [
       'nexa_api_base', 'provider', 'worker_id', 'poll_seconds', 'http_timeout_seconds',
       'provider_timeout_seconds', 'auto_start', 'keep_temp', 'force_cpu',
-      'stable_fast_3d_repo', 'stable_fast_3d_python', 'hunyuan3d_api_url'
+      'stable_fast_3d_repo', 'stable_fast_3d_python', 'hf_cache_dir', 'hunyuan3d_api_url'
     ];
     for (const key of keys) if (Object.prototype.hasOwnProperty.call(input, key)) next[key] = input[key];
     next.poll_seconds = Math.max(5, Number(next.poll_seconds) || 10);
@@ -101,6 +105,7 @@ class ConfigStore {
     next.provider = ['stable_fast_3d', 'hunyuan3d_api'].includes(next.provider) ? next.provider : 'stable_fast_3d';
     next.nexa_api_base = String(next.nexa_api_base || '').trim();
     next.worker_id = String(next.worker_id || this.defaults().worker_id).trim().slice(0, 100);
+    next.hf_cache_dir = String(next.hf_cache_dir || '').trim();
 
     const publicConfig = { ...next };
     delete publicConfig.worker_token;

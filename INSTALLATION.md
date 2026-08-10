@@ -1,15 +1,17 @@
-# Nexa 3D Worker Local v1.0.3 — Authentication Compatibility Fix
+# Nexa 3D Worker Local v1.0.4 — Hugging Face Cache Location Fix
 
-Use this ZIP inside the existing **Nexa 3D Worker Local** project:
+Apply this ZIP to the existing **Nexa 3D Worker Local** project using Manual Delivery, then Push to GitHub & Build as usual.
 
-1. Manual Delivery → Create delivery.
-2. Upload this ZIP.
-3. Stage ZIP.
-4. Apply staged files.
-5. Push to GitHub & Build.
-6. Download the new v1.0.3 Setup EXE.
-7. Close the existing Nexa 3D Worker Local application and install v1.0.3 over it.
-8. Open Nexa Connection. The saved API base/token should remain in Electron userData; if not, paste the current values from Nexa 3D Studio → Settings.
-9. Press Test connection.
+After installing v1.0.4:
 
-The website companion fix must also be installed in public_html.
+1. Open **Engine Setup**.
+2. Confirm **Repository folder** is still your existing Stable Fast 3D installation.
+3. Confirm **Engine Python** is still the existing `.venv\Scripts\python.exe`.
+4. Set **Hugging Face cache folder** to a drive with enough free space, for example `D:\N3D\HuggingFace`.
+5. Keep the existing Hugging Face token.
+6. Keep **Force CPU** enabled while the installed PyTorch build is CPU-only.
+7. Save settings, then start the Worker and run one generation.
+8. Activity & Logs will print the exact Hugging Face cache path used by Stable Fast 3D before the model starts.
+9. While that cache folder is configured, Nexa also places temporary per-job Stable Fast 3D work under `<cache folder>\nexa-worker-temp` instead of filling the Windows application-data drive.
+
+This update does **not** reinstall Stable Fast 3D and does not modify the Nexa website, GitHub Actions, project data, login, or other Nexa modules.

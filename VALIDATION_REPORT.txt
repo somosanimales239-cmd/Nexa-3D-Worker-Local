@@ -1,1 +1,16 @@
-Custom header occurrences: 3
+Nexa 3D Worker Local v1.0.4 — Validation Report
+
+PASS — package.json and nexa.project.json parse as valid JSON.
+PASS — Node syntax check: src/app.js.
+PASS — Node syntax check: src/backend/config-store.js.
+PASS — Node syntax check: src/backend/nexa-worker.js.
+PASS — Full existing `npm run validate` suite.
+PASS — Delivery validator: 12 required project files present in assembled validation source.
+PASS — Project validator: isolated local worker contract verified.
+PASS — Baseline tests: 3/3.
+PASS — Static UI contract: all 78 DOM IDs referenced by src/app.js exist in src/index.html.
+PASS — ConfigStore migration test: existing HF_HOME is imported when hf_cache_dir is absent, and explicit hf_cache_dir persists.
+PASS — Heavy work root test: when hf_cache_dir is configured, per-job temp work resolves under <hf_cache_dir>/nexa-worker-temp.
+PASS — Current baseline files used for the patch match the connected GitHub main branch blob SHAs for package.json, src/app.js, src/backend/config-store.js, src/backend/nexa-worker.js and src/index.html.
+
+No database migration. No website files. No GitHub Actions changes. No new npm dependency.
