@@ -1,21 +1,13 @@
-NEXA 3D WORKER LOCAL v1.0.2 — UI SMOKE FIX UPDATE
+NEXA 3D WORKER LOCAL v1.0.3 — HOSTINGER AUTH COMPATIBILITY FIX
 
-Modified:
-- package.json
-- nexa.project.json
-- scripts/ui-smoke.js
-- src/backend/nexa-worker.js
-- src/index.html
-- VALIDATION_REPORT.txt
+Changed:
+package.json
+nexa.project.json
+src/index.html
+src/backend/nexa-worker.js
 
 Purpose:
-- Fix GitHub Actions Step 15: Run Electron UI smoke test.
-- Prevent child_process.spawn from receiving the Electron API object.
-- Continue the same Nexa 3D Worker Local project at application version 1.0.2.
-
-Not modified:
-- .github/workflows/nexa-windows-build.yml
-- main.js
-- engine-manager.js
-- GitHub connection logic
-- Nexa App Builder Pro website
+- Continue sending Authorization: Bearer <worker token>.
+- Also send X-Nexa-3D-Worker-Token on heartbeat, claim, progress/fail, source-image download and result upload requests.
+- Application version synchronized to 1.0.3.
+- No engine behavior, GitHub token, OpenAI, or project data changes.

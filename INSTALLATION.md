@@ -1,12 +1,15 @@
-# Nexa 3D Worker Local v1.0.2 — UI Smoke Fix
+# Nexa 3D Worker Local v1.0.3 — Authentication Compatibility Fix
 
-Apply this ZIP to the EXISTING Nexa 3D Worker Local project through Manual Delivery.
+Use this ZIP inside the existing **Nexa 3D Worker Local** project:
 
-1. Manual Delivery → Create Delivery.
-2. Select the existing **Nexa 3D Worker Local** project.
-3. Upload this v1.0.2 fix ZIP.
-4. Stage ZIP.
-5. Apply staged files.
-6. Push to GitHub & Build.
+1. Manual Delivery → Create delivery.
+2. Upload this ZIP.
+3. Stage ZIP.
+4. Apply staged files.
+5. Push to GitHub & Build.
+6. Download the new v1.0.3 Setup EXE.
+7. Close the existing Nexa 3D Worker Local application and install v1.0.3 over it.
+8. Open Nexa Connection. The saved API base/token should remain in Electron userData; if not, paste the current values from Nexa 3D Studio → Settings.
+9. Press Test connection.
 
-Do not recreate the repository and do not change the GitHub token. The previous GitHub run already proved checkout, dependency installation, validation, and tests are working. This update only fixes the UI smoke harness that blocked the build before installer creation.
+The website companion fix must also be installed in public_html.

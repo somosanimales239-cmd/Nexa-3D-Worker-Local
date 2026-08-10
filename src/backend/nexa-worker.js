@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
-const VERSION = '1.0.2';
+const VERSION = '1.0.3';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -117,7 +117,7 @@ class NexaWorker {
     try {
       const response = await fetch(cfg.nexa_api_base + endpoint, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${cfg.worker_token}`, 'Content-Type': 'application/json', 'User-Agent': `Nexa-3D-Worker-Local/${VERSION}` },
+        headers: { 'Authorization': `Bearer ${cfg.worker_token}`, 'X-Nexa-3D-Worker-Token': cfg.worker_token, 'Content-Type': 'application/json', 'User-Agent': `Nexa-3D-Worker-Local/${VERSION}` },
         body: JSON.stringify(payload || {}),
         signal: controller.signal
       });
@@ -175,7 +175,7 @@ class NexaWorker {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.http_timeout_seconds * 1000);
     try {
-      const response = await fetch(job.image_url, { headers: { 'Authorization': `Bearer ${cfg.worker_token}`, 'X-Nexa-3D-Claim': job.claim_token }, signal: controller.signal });
+      const response = await fetch(job.image_url, { headers: { 'Authorization': `Bearer ${cfg.worker_token}`, 'X-Nexa-3D-Worker-Token': cfg.worker_token, 'X-Nexa-3D-Claim': job.claim_token }, signal: controller.signal });
       if (!response.ok) throw new Error(`Image download failed HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`);
       const bytes = Buffer.from(await response.arrayBuffer());
       await fsp.mkdir(path.dirname(target), { recursive: true });
@@ -197,7 +197,7 @@ class NexaWorker {
     try {
       const response = await fetch(cfg.nexa_api_base + 'worker-result.php', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${cfg.worker_token}`, 'User-Agent': `Nexa-3D-Worker-Local/${VERSION}` },
+        headers: { 'Authorization': `Bearer ${cfg.worker_token}`, 'X-Nexa-3D-Worker-Token': cfg.worker_token, 'User-Agent': `Nexa-3D-Worker-Local/${VERSION}` },
         body: form,
         signal: controller.signal
       });
