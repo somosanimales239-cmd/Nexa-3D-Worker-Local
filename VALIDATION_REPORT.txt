@@ -1,26 +1,16 @@
-Nexa 3D Worker Local v1.1.0 - Apply Package Workflow
+Nexa 3D Worker Local 1.3.0 validation
 
-Validation summary:
-- Syntax OK:
-  - main.js
-  - preload.js
-  - src/app.js
-  - src/backend/apply-package-store.js
-  - src/backend/config-store.js (existing compatibility)
-  - src/backend/nexa-worker.js (existing compatibility)
-- No changes were made to the Stable Fast 3D generation core.
-- This update adds a new local Apply Packages workflow as a safe companion to the web Phase 4 update.
+PASS:
+- node --check: main.js
+- node --check: preload.js
+- node --check: src/app.js
+- node --check: src/backend/config-store.js
+- node --check: src/backend/nexa-worker.js
+- node --check: src/backend/quick-texture-processor.js
+- Baseline GLB tests: 3 passed / 0 failed
+- Existing project validator: PASS
+- UI JavaScript ID references checked against src/index.html: no missing IDs
 
-What this update adds:
-- New Apply Packages page in Nexa 3D Worker Local
-- Import Apply Package ZIP files exported from Nexa 3D Studio Web
-- Local organized list of imported packages
-- Read manifest / brief when available
-- Mark package status: imported / processing / failed / completed
-- Attach completed GLB / GLTF / ZIP result files to each package
-- Reveal package folder / ZIP / attached result file
-- Delete local package records safely
-
-Important:
-- This update does not replace the original image-to-3D worker flow.
-- It adds a separate organized block to help manage web exported Apply Packages.
+Not executed in this environment:
+- Real Blender runtime test because Blender is not installed in the build container.
+- Electron UI smoke requiring the desktop runtime/dependencies.

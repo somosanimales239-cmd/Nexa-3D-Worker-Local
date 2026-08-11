@@ -7,6 +7,7 @@ const { probeSystem } = require('./src/backend/system-probe');
 const { EngineManager } = require('./src/backend/engine-manager');
 const { NexaWorker } = require('./src/backend/nexa-worker');
 const { ApplyPackageStore } = require('./src/backend/apply-package-store');
+const { probeBlender } = require('./src/backend/quick-texture-processor');
 
 let mainWindow = null;
 let store = null;
@@ -73,6 +74,11 @@ function registerIpc() {
   ipcMain.handle('engine:test-hunyuan', async () => engines.testHunyuan());
   ipcMain.handle('engine:probe', async () => engines.probeEngines());
   ipcMain.handle('engine:test-generation', async (_event, payload) => worker.generateLocalTest(payload || {}));
+  ipcMain.handle('engine:probe-blender', async () => probeBlender(store.get().blender_path || ''));
+  ipcMain.handle('file:pick-exe', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, { title: 'Choose Blender executable', properties: ['openFile'], filters: [{ name: 'Executable', extensions: ['exe'] }] });
+    return result.canceled ? null : result.filePaths[0];
+  });
 
   ipcMain.handle('apply:list', async () => ({ ok: true, packages: applyPackages.list() }));
   ipcMain.handle('apply:import', async (_event, payload) => ({ ok: true, item: await applyPackages.importPackage(payload?.path || '') }));

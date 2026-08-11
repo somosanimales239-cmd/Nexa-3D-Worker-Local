@@ -23,7 +23,7 @@
       </nav>
       <div class="sidebar-foot">
         <div class="mini-status"><i id="sideStatusDot"></i><div><b id="sideStatus">Stopped</b><small id="sideProvider">Stable Fast 3D</small></div></div>
-        <span class="version">v1.1.1 · Auto Bridge · No OpenAI</span>
+        <span class="version">v1.3.0 · Quick Texture · No OpenAI</span>
       </div>
     </aside>
 
@@ -104,7 +104,7 @@
       </section>
 
       <section class="page" data-page-panel="engine">
-        <div class="section-intro"><div><span class="eyebrow">STEP 2</span><h2>Prepare the local 3D engine</h2><p>Stable Fast 3D is the default local engine. Windows support is experimental upstream and the model requires approved Hugging Face access. Hunyuan3D can be used through its local API instead.</p></div><button class="btn secondary" id="probeEngineBtn">Probe engines</button></div>
+        <div class="section-intro"><div><span class="eyebrow">STEP 2</span><h2>Prepare the local 3D engine</h2><p>Stable Fast 3D creates models from images. Blender Quick Texture is the fast post-processing engine for models that already exist. Hunyuan3D remains optional.</p></div><button class="btn secondary" id="probeEngineBtn">Probe engines</button></div>
         <div class="grid two">
           <article class="card engine-card">
             <div class="engine-title"><div class="engine-logo">SF</div><div><span class="pill">DEFAULT</span><h3>Stable Fast 3D</h3><p>Single-image reconstruction to textured GLB.</p></div></div>
@@ -116,6 +116,15 @@
             <label>Hugging Face token <span class="optional">required by the gated model</span><input id="hfToken" type="password" placeholder="hf_..."></label>
             <label class="check-line"><input type="checkbox" id="forceCpu"> Force CPU mode <span>Much slower; useful for troubleshooting.</span></label>
             <div class="button-row"><button class="btn primary" id="installSf3dBtn">Install / Repair Stable Fast 3D</button><button class="btn secondary external-link" data-url="https://github.com/Stability-AI/stable-fast-3d">Official repository</button></div>
+          </article>
+
+          <article class="card engine-card">
+            <div class="engine-title"><div class="engine-logo">BT</div><div><span class="pill good">QUICK TEXTURE</span><h3>Blender Texture Engine</h3><p>Fast post-processing for an existing GLB. Preserves current materials and can use the original source image when needed.</p></div></div>
+            <div class="engine-status" id="blenderStatus">Not checked</div>
+            <label>Blender executable <span class="optional">auto-detected when possible</span><input id="blenderPath" placeholder="C:\Program Files\Blender Foundation\Blender 4.x\blender.exe"></label>
+            <label class="check-line"><input type="checkbox" id="quickTextureEnabled" checked> Enable automatic Quick Texture jobs <span>The same Worker will claim them automatically.</span></label>
+            <div class="button-row"><button class="btn primary" id="probeBlenderBtn">Detect / Test Blender</button><button class="btn secondary" id="chooseBlenderBtn">Choose blender.exe</button></div>
+            <div class="license-note">Quick Texture runs locally. It does not call OpenAI and does not require another cloud 3D service.</div>
           </article>
           <article class="card engine-card">
             <div class="engine-title"><div class="engine-logo alt">HY</div><div><span class="pill neutral">OPTIONAL</span><h3>Hunyuan3D Local API</h3><p>Connect this app to a Hunyuan3D server running on the same PC.</p></div></div>

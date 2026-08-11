@@ -37,6 +37,8 @@ class ConfigStore {
       stable_fast_3d_python: path.join(sf3dRoot, '.venv', 'Scripts', 'python.exe'),
       hf_cache_dir: hfCacheDir,
       hunyuan3d_api_url: 'http://127.0.0.1:8080',
+      blender_path: '',
+      quick_texture_enabled: true,
       worker_token: '',
       hf_token: ''
     };
@@ -96,7 +98,7 @@ class ConfigStore {
     const keys = [
       'nexa_api_base', 'provider', 'worker_id', 'poll_seconds', 'http_timeout_seconds',
       'provider_timeout_seconds', 'auto_start', 'keep_temp', 'force_cpu',
-      'stable_fast_3d_repo', 'stable_fast_3d_python', 'hf_cache_dir', 'hunyuan3d_api_url'
+      'stable_fast_3d_repo', 'stable_fast_3d_python', 'hf_cache_dir', 'hunyuan3d_api_url', 'blender_path', 'quick_texture_enabled'
     ];
     for (const key of keys) if (Object.prototype.hasOwnProperty.call(input, key)) next[key] = input[key];
     next.poll_seconds = Math.max(5, Number(next.poll_seconds) || 10);
@@ -106,6 +108,8 @@ class ConfigStore {
     next.nexa_api_base = String(next.nexa_api_base || '').trim();
     next.worker_id = String(next.worker_id || this.defaults().worker_id).trim().slice(0, 100);
     next.hf_cache_dir = String(next.hf_cache_dir || '').trim();
+    next.blender_path = String(next.blender_path || '').trim();
+    next.quick_texture_enabled = Boolean(next.quick_texture_enabled);
 
     const publicConfig = { ...next };
     delete publicConfig.worker_token;

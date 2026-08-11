@@ -1,4 +1,10 @@
+main.js
+preload.js
+package.json
+nexa.project.json
+src/app.js
+src/index.html
+src/backend/config-store.js
+src/backend/nexa-worker.js
 src/backend/quick-texture-processor.js
-src/backend/quick-texture-bridge.js
 scripts/start-quick-texture-bridge.js
-INSTALLATION.md

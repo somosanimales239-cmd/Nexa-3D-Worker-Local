@@ -3,10 +3,11 @@ const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 const crypto = require('crypto');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { ApplyPackageStore } = require('./apply-package-store');
+const { quickTextureJob } = require('./quick-texture-processor');
 
-const VERSION = '1.1.1';
+const VERSION = '1.3.0';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -263,6 +264,122 @@ class NexaWorker {
     }
   }
 
+
+  async claimQuickTexture() {
+    const cfg = this.config();
+    if (!cfg.quick_texture_enabled) return null;
+    const data = await this.requestJson('quick-texture-next.php', { worker_id: cfg.worker_id, version: VERSION });
+    return data.job || null;
+  }
+
+  async quickTextureProgress(job, progress, stage, message = '') {
+    await this.requestJson('quick-texture-progress.php', {
+      job_id: job.id, claim_token: job.claim_token, progress, stage, message,
+      worker_id: this.config().worker_id, version: VERSION
+    });
+    this.callbacks.onJob?.({ uuid: `quick-texture:${job.id}`, progress, stage, message, asset_name: job.asset_name || 'Quick Texture' });
+  }
+
+  async quickTextureFail(job, error) {
+    try {
+      await this.requestJson('quick-texture-fail.php', { job_id: job.id, claim_token: job.claim_token, error: String(error).slice(0, 3000) });
+    } catch (reportError) {
+      this.log(`Could not report Quick Texture failure: ${reportError.message}`, 'error');
+    }
+  }
+
+  async downloadQuickTextureBundle(job, target) {
+    const cfg = this.config();
+    const url = cfg.nexa_api_base + `quick-texture-bundle.php?job_id=${encodeURIComponent(job.id)}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), cfg.http_timeout_seconds * 1000);
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${cfg.worker_token}`,
+          'X-Nexa-3D-Worker-Token': cfg.worker_token,
+          'X-Nexa-3D-Claim': job.claim_token,
+          'User-Agent': `Nexa-3D-Worker-Local/${VERSION}`
+        },
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`Quick Texture bundle download failed HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      await fsp.mkdir(path.dirname(target), { recursive: true });
+      await fsp.writeFile(target, bytes);
+      return bytes.length;
+    } finally { clearTimeout(timer); }
+  }
+
+  extractQuickTextureBundle(zipFile, targetDir) {
+    if (process.platform !== 'win32') throw new Error('Quick Texture automatic ZIP extraction currently requires Windows.');
+    fs.mkdirSync(targetDir, { recursive: true });
+    const ps = `Expand-Archive -LiteralPath '${String(zipFile).replace(/'/g, "''")}' -DestinationPath '${String(targetDir).replace(/'/g, "''")}' -Force`;
+    const result = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], { encoding: 'utf8', windowsHide: true, timeout: 300000 });
+    if (result.status !== 0) throw new Error(String(result.stderr || result.stdout || 'Unable to extract Quick Texture bundle.').trim());
+  }
+
+  async uploadQuickTextureResult(job, resultFile) {
+    const cfg = this.config();
+    const bytes = await fsp.readFile(resultFile);
+    const form = new FormData();
+    form.append('job_id', job.id);
+    form.append('claim_token', job.claim_token);
+    form.append('result', new Blob([bytes], { type: 'model/gltf-binary' }), path.basename(resultFile));
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(cfg.http_timeout_seconds, 600) * 1000);
+    try {
+      const response = await fetch(cfg.nexa_api_base + 'quick-texture-result.php', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${cfg.worker_token}`, 'X-Nexa-3D-Worker-Token': cfg.worker_token, 'User-Agent': `Nexa-3D-Worker-Local/${VERSION}` },
+        body: form,
+        signal: controller.signal
+      });
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error(`Nexa returned HTTP ${response.status}: ${text.slice(0, 700)}`); }
+      if (!response.ok || data.ok === false) throw new Error(data.error || `Nexa returned HTTP ${response.status}`);
+      return data;
+    } finally { clearTimeout(timer); }
+  }
+
+  async processQuickTextureJob(job) {
+    const cfg = this.store.get();
+    const root = path.join(this.heavyWorkRoot(), `quick-texture-${safeName(job.id)}`);
+    const zip = path.join(root, 'bundle.zip');
+    const bundleDir = path.join(root, 'bundle');
+    const outputDir = path.join(root, 'output');
+    this.busy = true;
+    this.currentJob = { uuid: `quick-texture:${job.id}`, asset_name: job.asset_name || 'Quick Texture' };
+    this.emitStatus();
+    try {
+      await this.quickTextureProgress(job, 8, 'Downloading Quick Texture bundle', 'Downloading model, original source image and references.');
+      const size = await this.downloadQuickTextureBundle(job, zip);
+      this.extractQuickTextureBundle(zip, bundleDir);
+      await this.quickTextureProgress(job, 25, 'Bundle ready', `${size} bytes downloaded and extracted.`);
+      await this.quickTextureProgress(job, 40, 'Fast texture pass', 'Blender is preserving existing materials and applying a fast texture/color enhancement.');
+      const result = await quickTextureJob({
+        bundleDir,
+        outputDir,
+        blenderPath: cfg.blender_path || '',
+        onLog: (line) => this.log(`[Quick Texture] ${line}`),
+        onChild: (child) => { this.currentChild = child; }
+      });
+      const validated = await validateGlb(result.output);
+      await this.quickTextureProgress(job, 88, 'Validating result', `GLB validated · ${validated.sha256.slice(0, 12)}…`);
+      await this.uploadQuickTextureResult(job, result.output);
+      this.processed += 1;
+      this.log(`Quick Texture ${job.id} completed and returned to Nexa.`);
+      this.callbacks.onJob?.({ uuid: `quick-texture:${job.id}`, progress: 100, stage: 'Completed', asset_name: job.asset_name || 'Quick Texture' });
+    } catch (error) {
+      this.log(`Quick Texture ${job.id} failed: ${error.message}`, 'error');
+      await this.quickTextureFail(job, error.message);
+    } finally {
+      if (!cfg.keep_temp) await fsp.rm(root, { recursive: true, force: true }).catch(() => {});
+      this.busy = false; this.currentJob = null; this.emitStatus();
+    }
+  }
+
   async heartbeat() {
     const cfg = this.config();
     const data = await this.requestJson('worker-heartbeat.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: VERSION });
@@ -500,6 +617,12 @@ class NexaWorker {
       try {
         await this.heartbeat();
         await this.checkPendingDispatchUploads();
+        const quickTexture = await this.claimQuickTexture();
+        if (quickTexture) {
+          this.log(`Claimed Quick Texture ${quickTexture.id}: ${quickTexture.asset_name || '3D asset'}.`);
+          await this.processQuickTextureJob(quickTexture);
+          continue;
+        }
         const job = await this.claim();
         if (job) {
           this.log(`Claimed ${job.uuid}: ${job.asset_name || '3D asset'}.`);
@@ -525,6 +648,11 @@ class NexaWorker {
     if (this.busy) throw new Error('A job is already processing.');
     await this.heartbeat();
     await this.checkPendingDispatchUploads();
+    const quickTexture = await this.claimQuickTexture();
+    if (quickTexture) {
+      await this.processQuickTextureJob(quickTexture);
+      return { ok: true, message: 'One Quick Texture job was processed.', status: this.status() };
+    }
     const job = await this.claim();
     if (job) {
       this.log(`One-job mode claimed ${job.uuid}.`);
@@ -536,7 +664,7 @@ class NexaWorker {
       await this.stageDispatchPackage(dispatchJob);
       return { ok: true, message: 'One queued Apply Package was downloaded and staged for automatic upload.', status: this.status() };
     }
-    return { ok: true, message: 'No queued 3D or Apply Package jobs were found.' };
+    return { ok: true, message: 'No queued Quick Texture, 3D or Apply Package jobs were found.' };
   }
 
   async generateLocalTest(payload = {}) {

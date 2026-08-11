@@ -22,7 +22,7 @@ function appendEngineLog(line){ state.engineLogs.push(line); state.engineLogs=st
 function fillConfig(cfg){
   state.config=cfg;
   $('nexaApiBase').value=cfg.nexa_api_base||''; $('workerToken').value=cfg.has_worker_token?'••••••••••••••••':''; $('workerId').value=cfg.worker_id||''; $('provider').value=cfg.provider||'stable_fast_3d';
-  $('sf3dRepo').value=cfg.stable_fast_3d_repo||''; $('sf3dPython').value=cfg.stable_fast_3d_python||''; $('hfCacheDir').value=cfg.hf_cache_dir||''; $('hfToken').value=cfg.has_hf_token?'••••••••••••••••':''; $('hunyuanUrl').value=cfg.hunyuan3d_api_url||'';
+  $('sf3dRepo').value=cfg.stable_fast_3d_repo||''; $('sf3dPython').value=cfg.stable_fast_3d_python||''; $('hfCacheDir').value=cfg.hf_cache_dir||''; $('hfToken').value=cfg.has_hf_token?'••••••••••••••••':''; $('hunyuanUrl').value=cfg.hunyuan3d_api_url||''; $('blenderPath').value=cfg.blender_path||''; $('quickTextureEnabled').checked=cfg.quick_texture_enabled!==false;
   $('forceCpu').checked=Boolean(cfg.force_cpu); $('pollSeconds').value=cfg.poll_seconds||10; $('httpTimeout').value=cfg.http_timeout_seconds||120; $('providerTimeout').value=cfg.provider_timeout_seconds||3600; $('autoStart').checked=Boolean(cfg.auto_start); $('keepTemp').checked=Boolean(cfg.keep_temp);
   $('metricEngine').textContent=cfg.provider==='hunyuan3d_api'?'Hunyuan3D API':'Stable Fast 3D'; $('sideProvider').textContent=$('metricEngine').textContent;
 }
@@ -78,7 +78,7 @@ ${item.uploaded_back_to_nexa?'Uploaded back to Nexa automatically.':'The worker 
   </article>`).join('');
 }
 
-function connectionPayload(){return {nexa_api_base:$('nexaApiBase').value.trim(),worker_token:$('workerToken').value.trim(),worker_id:$('workerId').value.trim(),provider:$('provider').value,stable_fast_3d_repo:$('sf3dRepo').value.trim(),stable_fast_3d_python:$('sf3dPython').value.trim(),hf_cache_dir:$('hfCacheDir').value.trim(),hf_token:$('hfToken').value.trim(),hunyuan3d_api_url:$('hunyuanUrl').value.trim(),force_cpu:$('forceCpu').checked}}
+function connectionPayload(){return {nexa_api_base:$('nexaApiBase').value.trim(),worker_token:$('workerToken').value.trim(),worker_id:$('workerId').value.trim(),provider:$('provider').value,stable_fast_3d_repo:$('sf3dRepo').value.trim(),stable_fast_3d_python:$('sf3dPython').value.trim(),hf_cache_dir:$('hfCacheDir').value.trim(),hf_token:$('hfToken').value.trim(),hunyuan3d_api_url:$('hunyuanUrl').value.trim(),blender_path:$('blenderPath').value.trim(),quick_texture_enabled:$('quickTextureEnabled').checked,force_cpu:$('forceCpu').checked}}
 function settingsPayload(){return {...connectionPayload(),poll_seconds:Number($('pollSeconds').value),http_timeout_seconds:Number($('httpTimeout').value),provider_timeout_seconds:Number($('providerTimeout').value),auto_start:$('autoStart').checked,keep_temp:$('keepTemp').checked}}
 async function saveSettings(show=true){const result=await window.nexa3d.saveSettings(settingsPayload());fillConfig(result.config);if(show)toast('Settings saved.');return result}
 
@@ -87,7 +87,17 @@ async function refreshAll(){
 }
 async function refreshApplyPackages(){ const r=await window.nexa3d.listApplyPackages(); renderApplyPackages(r.packages||[]); }
 async function probeEngines(show=true){
-  try{const r=await window.nexa3d.probeEngines();const sf=r.stable_fast_3d;const hy=r.hunyuan3d_api;$('sf3dStatus').textContent=sf.repo_ready&&sf.venv_ready?(sf.torch?.cuda?`Ready · CUDA · ${sf.torch.device}`:sf.torch?.version?`Ready · CPU/PyTorch ${sf.torch.version}`:'Source ready · Python check failed'):'Not installed';$('sf3dStatus').classList.toggle('ready',sf.repo_ready&&sf.venv_ready);$('metricEngineReady').textContent=state.config.provider==='stable_fast_3d'?$('sf3dStatus').textContent:(hy.reachable?'Local API ready':'Local API offline');$('hunyuanStatus').textContent=hy.reachable?`Connected · ${hy.detail}`:`Offline · ${hy.detail||'Not reachable'}`;$('hunyuanStatus').classList.toggle('ready',hy.reachable);if(show)toast('Engine status refreshed.')}catch(e){if(show)toast(e.message,'bad')}
+  try{
+    const [r,bt]=await Promise.all([window.nexa3d.probeEngines(),window.nexa3d.probeBlender()]);
+    const sf=r.stable_fast_3d;const hy=r.hunyuan3d_api;
+    $('sf3dStatus').textContent=sf.repo_ready&&sf.venv_ready?(sf.torch?.cuda?`Ready · CUDA · ${sf.torch.device}`:sf.torch?.version?`Ready · CPU/PyTorch ${sf.torch.version}`:'Source ready · Python check failed'):'Not installed';
+    $('sf3dStatus').classList.toggle('ready',sf.repo_ready&&sf.venv_ready);
+    $('metricEngineReady').textContent=state.config.provider==='stable_fast_3d'?$('sf3dStatus').textContent:(hy.reachable?'Local API ready':'Local API offline');
+    $('hunyuanStatus').textContent=hy.reachable?`Connected · ${hy.detail}`:`Offline · ${hy.detail||'Not reachable'}`;$('hunyuanStatus').classList.toggle('ready',hy.reachable);
+    $('blenderStatus').textContent=bt.found?`${bt.version} · Ready for Quick Texture`:`Not ready · ${bt.error||'Blender not detected'}`;$('blenderStatus').classList.toggle('ready',Boolean(bt.found));
+    if(bt.found && !$('blenderPath').value.trim()) $('blenderPath').value=bt.executable||'';
+    if(show)toast('Engine status refreshed.');
+  }catch(e){if(show)toast(e.message,'bad')}
 }
 
 function wire(){
@@ -105,6 +115,8 @@ function wire(){
   $('stopWorkerBtn').addEventListener('click',async()=>{const r=await window.nexa3d.stopWorker();renderWorker(r.status);toast(r.message)});
 
   $('probeEngineBtn').addEventListener('click',()=>probeEngines(true));
+  $('probeBlenderBtn').addEventListener('click',async()=>{try{await saveSettings(false);const r=await window.nexa3d.probeBlender();$('blenderStatus').textContent=r.found?`${r.version} · Ready for Quick Texture`:`Not ready · ${r.error||'Blender not detected'}`;$('blenderStatus').classList.toggle('ready',Boolean(r.found));if(r.found&& !$('blenderPath').value.trim())$('blenderPath').value=r.executable||'';toast(r.found?'Blender Quick Texture is ready.':r.error,r.found?'good':'bad')}catch(e){toast(e.message,'bad')}});
+  $('chooseBlenderBtn').addEventListener('click',async()=>{const file=await window.nexa3d.pickExecutable();if(!file)return;$('blenderPath').value=file;await saveSettings(false);await probeEngines(false);toast('Blender executable selected.');});
   $('chooseHfCacheBtn').addEventListener('click',async()=>{const dir=await window.nexa3d.pickFolder();if(!dir)return;$('hfCacheDir').value=dir;toast('Hugging Face cache folder selected. Save settings to apply it.');});
   $('installSf3dBtn').addEventListener('click',async()=>{try{await saveSettings(false);$('installSf3dBtn').disabled=true;$('installSf3dBtn').textContent='Installing…';appendEngineLog('Starting Stable Fast 3D installation. Large downloads may take time.');const r=await window.nexa3d.installStableFast3D();toast('Stable Fast 3D installation completed.');appendEngineLog(`Completed: ${r.verification||'ready'}`);await probeEngines(false)}catch(e){toast(e.message,'bad');appendEngineLog(`ERROR: ${e.message}`)}finally{$('installSf3dBtn').disabled=false;$('installSf3dBtn').textContent='Install / Repair Stable Fast 3D'}});
   $('testHunyuanBtn').addEventListener('click',async()=>{try{await saveSettings(false);const r=await window.nexa3d.testHunyuan();$('hunyuanStatus').textContent=`Connected · ${r.detail}`;$('hunyuanStatus').classList.add('ready');toast('Hunyuan3D local API is reachable.')}catch(e){$('hunyuanStatus').textContent=`Offline · ${e.message}`;$('hunyuanStatus').classList.remove('ready');toast(e.message,'bad')}});

@@ -3,153 +3,204 @@ const fs = require('fs');
 const fsp = fs.promises;
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
-function fileExists(file) { try { return fs.statSync(file).isFile(); } catch { return false; } }
-function dirExists(dir) { try { return fs.statSync(dir).isDirectory(); } catch { return false; } }
-async function ensureDir(dir) { await fsp.mkdir(dir, { recursive: true }); }
-async function writeText(file, text) { await ensureDir(path.dirname(file)); await fsp.writeFile(file, text, 'utf8'); }
+function fileExists(file){try{return fs.statSync(file).isFile();}catch{return false;}}
+function dirExists(dir){try{return fs.statSync(dir).isDirectory();}catch{return false;}}
+async function ensureDir(dir){await fsp.mkdir(dir,{recursive:true});}
 
-function defaultBlenderPaths() {
-  return process.platform === 'win32'
-    ? [
-        'C:/Program Files/Blender Foundation/Blender 4.2/blender.exe',
-        'C:/Program Files/Blender Foundation/Blender 4.1/blender.exe',
-        'C:/Program Files/Blender Foundation/Blender 4.0/blender.exe',
-        'C:/Program Files/Blender Foundation/Blender/blender.exe'
-      ]
-    : ['blender'];
+function blenderCandidates(){
+  const candidates=[];
+  if(process.platform==='win32'){
+    const roots=['C:/Program Files/Blender Foundation','C:/Program Files'];
+    for(const root of roots){
+      if(!dirExists(root)) continue;
+      try{
+        for(const name of fs.readdirSync(root)){
+          if(!name.toLowerCase().startsWith('blender')) continue;
+          candidates.push(path.join(root,name,'blender.exe'));
+        }
+      }catch{}
+    }
+    candidates.push('C:/Program Files/Blender Foundation/Blender 4.5/blender.exe','C:/Program Files/Blender Foundation/Blender 4.4/blender.exe','C:/Program Files/Blender Foundation/Blender 4.3/blender.exe','C:/Program Files/Blender Foundation/Blender 4.2/blender.exe','C:/Program Files/Blender Foundation/Blender/blender.exe');
+  } else candidates.push('blender');
+  return [...new Set(candidates)];
 }
 
-function resolveBlender(customPath = '') {
-  const probes = customPath ? [customPath] : defaultBlenderPaths();
-  for (const probe of probes) {
-    if (probe === 'blender') return probe;
-    if (fileExists(probe)) return probe;
+function resolveBlender(customPath=''){
+  const custom=String(customPath||'').trim();
+  if(custom){if(fileExists(custom)||custom==='blender')return custom;throw new Error('Configured Blender executable was not found.');}
+  for(const candidate of blenderCandidates()) if(candidate==='blender'||fileExists(candidate)) return candidate;
+  throw new Error('Blender was not detected. Install Blender or choose blender.exe in Engine Setup.');
+}
+
+function probeBlender(customPath=''){
+  try{
+    const executable=resolveBlender(customPath);
+    const result=spawnSync(executable,['--version'],{encoding:'utf8',windowsHide:true,timeout:15000});
+    const output=String(result.stdout||result.stderr||'').trim();
+    if(result.status!==0 && !output) throw new Error('Blender could not be started.');
+    const first=output.split(/\r?\n/)[0]||'Blender detected';
+    return {ok:true,found:true,executable,version:first};
+  }catch(error){return {ok:false,found:false,executable:'',version:'',error:error.message};}
+}
+
+async function readManifest(bundleDir){
+  const file=path.join(bundleDir,'manifest.json');
+  if(!fileExists(file)) throw new Error('manifest.json is missing from the Quick Texture bundle.');
+  const parsed=JSON.parse(await fsp.readFile(file,'utf8'));
+  if(!parsed||typeof parsed!=='object')throw new Error('Quick Texture manifest is invalid.');
+  return parsed;
+}
+
+function bundlePath(bundleDir,relative){
+  const clean=String(relative||'').replaceAll('\\','/').replace(/^\/+/, '');
+  if(!clean)return '';
+  const full=path.resolve(bundleDir,...clean.split('/'));
+  const root=path.resolve(bundleDir)+path.sep;
+  if(full!==path.resolve(bundleDir)&&!full.startsWith(root)) throw new Error('Unsafe bundle path was blocked.');
+  return full;
+}
+
+async function detectInputs(bundleDir,manifest){
+  const model=bundlePath(bundleDir,manifest.model_path||'model.glb');
+  if(!fileExists(model))throw new Error('Input model.glb is missing from the Quick Texture bundle.');
+  const source=manifest.source_image_path?bundlePath(bundleDir,manifest.source_image_path):'';
+  const refs=[];
+  for(const ref of Array.isArray(manifest.reference_images)?manifest.reference_images:[]){
+    const rel=typeof ref==='string'?ref:ref?.path;
+    if(!rel)continue;
+    const full=bundlePath(bundleDir,rel);if(fileExists(full))refs.push(full);
   }
-  throw new Error('Blender was not found. Install Blender or configure the Blender path.');
+  const usableSource=fileExists(source)?source:(refs[0]||'');
+  return {model,source:usableSource,refs};
 }
 
-async function readManifest(bundleDir) {
-  const file = path.join(bundleDir, 'manifest.json');
-  if (!fileExists(file)) throw new Error('manifest.json was not found in the quick texture bundle.');
-  return JSON.parse(await fsp.readFile(file, 'utf8'));
-}
-
-async function detectFiles(bundleDir, manifest) {
-  const model = manifest.model_path ? path.join(bundleDir, manifest.model_path) : path.join(bundleDir, 'model.glb');
-  const image = manifest.source_image_path ? path.join(bundleDir, manifest.source_image_path) : path.join(bundleDir, 'source.png');
-  const refs = Array.isArray(manifest.reference_images) ? manifest.reference_images.map((x) => path.join(bundleDir, x)).filter(fileExists) : [];
-  if (!fileExists(model)) throw new Error('The bundle does not include the input model file.');
-  if (!fileExists(image)) throw new Error('The bundle does not include the source image file.');
-  return { model, image, refs };
-}
-
-function pythonScript(payload) {
-  return `
-import bpy
-import os
-import math
+function blenderScript(payload){
+  return String.raw`
+import bpy, os, traceback
 
 input_model = r'''${payload.model}'''
-input_image = r'''${payload.image}'''
+source_image = r'''${payload.source}'''
 output_glb = r'''${payload.output}'''
-metallic = ${Number(payload.metallic || 0.1)}
-roughness = ${Number(payload.roughness || 0.65)}
-saturation = ${Number(payload.saturation || 1.15)}
+metallic = ${payload.metallic}
+roughness = ${payload.roughness}
+saturation = ${payload.saturation}
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-scene = bpy.context.scene
-scene.render.engine = 'BLENDER_EEVEE'
-
 bpy.ops.import_scene.gltf(filepath=input_model)
-objs = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH']
-if not objs:
-    raise RuntimeError('No mesh objects were found in the input model.')
+objects = [o for o in bpy.context.scene.objects if o.type == 'MESH']
+if not objects:
+    raise RuntimeError('No mesh objects were found in the input GLB.')
 
-for obj in objs:
-    bpy.context.view_layer.objects.active = obj
-    obj.select_set(True)
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.uv.smart_project(angle_limit=66.0, island_margin=0.02)
-    bpy.ops.object.mode_set(mode='OBJECT')
-    obj.select_set(False)
+src_img = None
+if source_image and os.path.isfile(source_image):
+    src_img = bpy.data.images.load(source_image, check_existing=True)
 
-img = bpy.data.images.load(input_image)
 
-for obj in objs:
-    mat = bpy.data.materials.new(name=f'QuickTexture_{obj.name}')
-    mat.use_nodes = True
+def find_principled(mat):
+    if not mat.use_nodes:
+        mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    for node in nodes:
+        if node.type == 'BSDF_PRINCIPLED':
+            return node
+    out = None
+    for node in nodes:
+        if node.type == 'OUTPUT_MATERIAL':
+            out = node
+            break
+    if out is None:
+        out = nodes.new('ShaderNodeOutputMaterial')
+    bsdf = nodes.new('ShaderNodeBsdfPrincipled')
+    mat.node_tree.links.new(bsdf.outputs.get('BSDF'), out.inputs.get('Surface'))
+    return bsdf
+
+
+def tune_existing_texture(mat, bsdf):
+    base = bsdf.inputs.get('Base Color')
+    if base is None:
+        return False
+    links = list(base.links)
+    if not links:
+        return False
+    source_socket = links[0].from_socket
+    for link in links:
+        mat.node_tree.links.remove(link)
+    hsv = mat.node_tree.nodes.new('ShaderNodeHueSaturation')
+    hsv.inputs['Saturation'].default_value = saturation
+    mat.node_tree.links.new(source_socket, hsv.inputs['Color'])
+    mat.node_tree.links.new(hsv.outputs['Color'], base)
+    return True
+
+
+def add_source_box_texture(mat, bsdf):
+    if src_img is None:
+        return False
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
-    for node in list(nodes):
-        nodes.remove(node)
-    output = nodes.new(type='ShaderNodeOutputMaterial')
-    output.location = (400, 0)
-    bsdf = nodes.new(type='ShaderNodeBsdfPrincipled')
-    bsdf.location = (120, 0)
-    tex = nodes.new(type='ShaderNodeTexImage')
-    tex.location = (-450, 80)
-    tex.image = img
-    mapping = nodes.new(type='ShaderNodeMapping')
-    mapping.location = (-700, 80)
-    texcoord = nodes.new(type='ShaderNodeTexCoord')
-    texcoord.location = (-950, 80)
-    hsv = nodes.new(type='ShaderNodeHueSaturation')
-    hsv.location = (-150, 80)
-    hsv.inputs[1].default_value = saturation
-    bsdf.inputs['Metallic'].default_value = metallic
-    bsdf.inputs['Roughness'].default_value = roughness
-
-    links.new(texcoord.outputs['UV'], mapping.inputs['Vector'])
+    tex = nodes.new('ShaderNodeTexImage')
+    tex.image = src_img
+    tex.projection = 'BOX'
+    tex.projection_blend = 0.28
+    coord = nodes.new('ShaderNodeTexCoord')
+    mapping = nodes.new('ShaderNodeMapping')
+    hsv = nodes.new('ShaderNodeHueSaturation')
+    hsv.inputs['Saturation'].default_value = saturation
+    links.new(coord.outputs['Generated'], mapping.inputs['Vector'])
     links.new(mapping.outputs['Vector'], tex.inputs['Vector'])
     links.new(tex.outputs['Color'], hsv.inputs['Color'])
     links.new(hsv.outputs['Color'], bsdf.inputs['Base Color'])
-    links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
+    return True
 
+for obj in objects:
     if len(obj.data.materials) == 0:
+        mat = bpy.data.materials.new(name='Nexa_QuickTexture')
+        mat.use_nodes = True
         obj.data.materials.append(mat)
-    else:
-        obj.data.materials[0] = mat
+    for slot_index in range(len(obj.data.materials)):
+        mat = obj.data.materials[slot_index]
+        if mat is None:
+            mat = bpy.data.materials.new(name='Nexa_QuickTexture')
+            mat.use_nodes = True
+            obj.data.materials[slot_index] = mat
+        bsdf = find_principled(mat)
+        if bsdf.inputs.get('Metallic') is not None:
+            bsdf.inputs['Metallic'].default_value = max(0.0, min(1.0, metallic))
+        if bsdf.inputs.get('Roughness') is not None:
+            bsdf.inputs['Roughness'].default_value = max(0.0, min(1.0, roughness))
+        preserved = tune_existing_texture(mat, bsdf)
+        if not preserved:
+            add_source_box_texture(mat, bsdf)
 
-bpy.ops.export_scene.gltf(filepath=output_glb, export_format='GLB', export_texcoords=True, export_normals=True, export_materials='EXPORT')
-print('Quick texture completed:', output_glb)
+bpy.ops.export_scene.gltf(filepath=output_glb, export_format='GLB', export_texcoords=True, export_normals=True, export_materials='EXPORT', export_yup=True)
+print('NEXA_QUICK_TEXTURE_OK', output_glb)
 `;
 }
 
-async function runBlender(blenderExe, pythonFile, cwd, onLog) {
-  return await new Promise((resolve, reject) => {
-    const child = spawn(blenderExe, ['--background', '--python', pythonFile], { cwd, windowsHide: true });
-    child.stdout.on('data', (chunk) => onLog(String(chunk)));
-    child.stderr.on('data', (chunk) => onLog(String(chunk)));
-    child.on('error', reject);
-    child.on('close', (code) => code === 0 ? resolve() : reject(new Error(`Blender exited with code ${code}.`)));
+async function runBlender(executable,script,cwd,onLog,onChild){
+  return new Promise((resolve,reject)=>{
+    const child=spawn(executable,['--background','--python',script],{cwd,windowsHide:true,shell:false});
+    if(typeof onChild==='function')onChild(child);
+    const log=(chunk)=>{const s=String(chunk||'');if(s.trim())onLog(s.trim());};
+    child.stdout?.on('data',log);child.stderr?.on('data',log);child.on('error',(error)=>{if(typeof onChild==='function')onChild(null);reject(error)});child.on('close',(code)=>{if(typeof onChild==='function')onChild(null);code===0?resolve():reject(new Error(`Blender Quick Texture exited with code ${code}.`))});
   });
 }
 
-async function quickTextureJob(options = {}) {
-  const bundleDir = path.resolve(String(options.bundleDir || ''));
-  const outputDir = path.resolve(String(options.outputDir || path.join(bundleDir, 'output')));
-  const blenderExe = resolveBlender(String(options.blenderPath || ''));
-  const log = typeof options.onLog === 'function' ? options.onLog : () => {};
-  const manifest = await readManifest(bundleDir);
-  const files = await detectFiles(bundleDir, manifest);
-  await ensureDir(outputDir);
-  const output = path.join(outputDir, 'quick-textured.glb');
-  const scriptFile = path.join(os.tmpdir(), `nexa-quick-texture-${Date.now()}.py`);
-  await writeText(scriptFile, pythonScript({
-    model: files.model,
-    image: files.image,
-    output,
-    metallic: manifest.metallic ?? 0.12,
-    roughness: manifest.roughness ?? 0.64,
-    saturation: manifest.saturation ?? 1.15
-  }));
-  log(`Running Blender quick texture script with ${blenderExe}`);
-  await runBlender(blenderExe, scriptFile, bundleDir, log);
-  if (!fileExists(output)) throw new Error('The quick textured GLB was not created.');
-  return { output, manifest };
+async function quickTextureJob(options={}){
+  const bundleDir=path.resolve(String(options.bundleDir||''));
+  if(!dirExists(bundleDir))throw new Error('Quick Texture bundle directory was not found.');
+  const manifest=await readManifest(bundleDir);const inputs=await detectInputs(bundleDir,manifest);
+  const outputDir=path.resolve(String(options.outputDir||path.join(bundleDir,'output')));await ensureDir(outputDir);
+  const output=path.join(outputDir,'quick-textured.glb');
+  const blender=resolveBlender(String(options.blenderPath||''));
+  const script=path.join(os.tmpdir(),`nexa-quick-texture-${Date.now()}-${Math.random().toString(16).slice(2)}.py`);
+  const payload={model:inputs.model.replaceAll('\\','/'),source:inputs.source.replaceAll('\\','/'),output:output.replaceAll('\\','/'),metallic:Number(manifest.metallic??0.10),roughness:Number(manifest.roughness??0.62),saturation:Number(manifest.saturation??1.12)};
+  await fsp.writeFile(script,blenderScript(payload),'utf8');
+  try{await runBlender(blender,script,bundleDir,typeof options.onLog==='function'?options.onLog:()=>{},options.onChild);}finally{await fsp.rm(script,{force:true}).catch(()=>{});}
+  if(!fileExists(output))throw new Error('Blender finished without creating quick-textured.glb.');
+  const stat=await fsp.stat(output);if(stat.size<20)throw new Error('Quick Texture GLB is empty or invalid.');
+  return {output,manifest,blender};
 }
 
-module.exports = { quickTextureJob, resolveBlender };
+module.exports={quickTextureJob,resolveBlender,probeBlender};

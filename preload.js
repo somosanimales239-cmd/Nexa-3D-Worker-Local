@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('nexa3d', {
   testHunyuan: () => ipcRenderer.invoke('engine:test-hunyuan'),
   probeEngines: () => ipcRenderer.invoke('engine:probe'),
   testGeneration: (payload) => ipcRenderer.invoke('engine:test-generation', payload),
+  probeBlender: () => ipcRenderer.invoke('engine:probe-blender'),
+  pickExecutable: () => ipcRenderer.invoke('file:pick-exe'),
   pickImage: () => ipcRenderer.invoke('file:pick-image'),
   pickApplyZip: () => ipcRenderer.invoke('file:pick-apply-zip'),
   pickResultFile: () => ipcRenderer.invoke('file:pick-result'),

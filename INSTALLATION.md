@@ -1,48 +1,30 @@
-Nexa 3D Worker Local Update 1.2.0 — Quick Texture One Click
+# Nexa 3D Worker Local Update 1.3.0 — Integrated Quick Texture
 
-PURPOSE
-This update adds a very fast local quick-texture processor for models that already exist.
-It is inspired by a Meshy-like one-click workflow:
-- object already created
-- click one button
-- worker quickly applies color and texture
-- especially useful when the model was created from an image
+Install this update SECOND.
 
-WHAT IT DOES
-- claims quick-texture jobs from the website automatically
-- downloads a quick-texture bundle automatically
-- uses Blender headless to:
-  - import the GLB
-  - smart-unwrap UVs
-  - apply the original image as a texture
-  - create a principled material quickly
-  - export a quick textured GLB
-- uploads the result automatically back to Nexa
+## What changes
+Quick Texture is now part of the NORMAL Nexa 3D Worker loop. No separate console or bridge script is needed.
 
-FILES INCLUDED
-- src/backend/quick-texture-processor.js
-- src/backend/quick-texture-bridge.js
-- scripts/start-quick-texture-bridge.js
+When the Worker is Running it automatically checks for:
+1. Quick Texture jobs
+2. Image → 3D generation jobs
+3. Apply Package dispatch jobs
 
-REQUIREMENTS
-- Blender installed locally
-- working worker token
-- the web update 1.7.0 installed
-- Windows is recommended for this version because ZIP extraction uses Expand-Archive
+## Quick Texture engine
+- Detects Blender automatically when possible.
+- Adds Blender status to **Engine Setup**.
+- Lets you choose `blender.exe` if auto-detection does not find it.
+- Adds **Enable automatic Quick Texture jobs**.
+- Preserves existing GLB materials/textures when they already exist.
+- Tunes roughness / metallic / saturation.
+- If the model lacks a usable texture, it uses the original Image → 3D source image or the first saved reference as a fast fallback texture.
+- Exports a new GLB and uploads it to Nexa automatically.
+- Stop Worker can terminate the active Blender process.
 
-BASIC USE
-1. Install the web update 1.7.0.
-2. Add the one-click Quick Texture button in the website preview area.
-3. Install these worker files.
-4. Set environment variables:
-   - NEXA_QUICK_TEXTURE_BASE_URL
-   - NEXA_QUICK_TEXTURE_WORKER_TOKEN
-   - NEXA_QUICK_TEXTURE_WORKER_ID
-   - NEXA_BLENDER_PATH (optional if Blender is in a default path)
-5. Start the bridge:
-   node scripts/start-quick-texture-bridge.js
+## One-time requirement
+Blender must be installed on the Windows PC. This update does not silently install Blender.
 
-IMPORTANT
-This is a fast automatic color + texture pass.
-It is not a full PBR authoring suite.
-The goal is speed, convenience, and a one-click workflow similar to what you described.
+## Installation
+Replace only the files included in this ZIP inside the current Nexa 3D Worker Local project, then rebuild/install the Worker the same way you already build it.
+
+Do NOT run `scripts/start-quick-texture-bridge.js`; it now only tells you that Quick Texture is integrated into the normal Worker.
