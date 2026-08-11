@@ -1,7 +1,4 @@
-main.js
-preload.js
-package.json
-src/app.js
-src/index.html
-src/styles.css
-src/backend/apply-package-store.js
+src/backend/quick-texture-processor.js
+src/backend/quick-texture-bridge.js
+scripts/start-quick-texture-bridge.js
+INSTALLATION.md

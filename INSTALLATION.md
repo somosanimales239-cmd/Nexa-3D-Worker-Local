@@ -1,29 +1,48 @@
-Nexa 3D Worker Local Update 1.1.1 — Automatic Web ↔ Worker Bridge
+Nexa 3D Worker Local Update 1.2.0 — Quick Texture One Click
 
-INSTALLATION
-1. Back up your current Nexa 3D Worker Local folder.
-2. Copy the files from this ZIP over your current worker project.
-3. Replace existing files when prompted.
-4. Start the worker again.
+PURPOSE
+This update adds a very fast local quick-texture processor for models that already exist.
+It is inspired by a Meshy-like one-click workflow:
+- object already created
+- click one button
+- worker quickly applies color and texture
+- especially useful when the model was created from an image
 
-WHAT THIS UPDATE DOES
-- The worker now polls the web for queued Apply Package dispatch jobs.
-- When one is found, the worker automatically:
-  - claims it
-  - downloads the Apply Package ZIP
-  - imports it into Apply Packages locally
-  - creates a watched result folder
-  - waits for the finished GLB / GLTF / ZIP
-  - uploads the result back to Nexa automatically
+WHAT IT DOES
+- claims quick-texture jobs from the website automatically
+- downloads a quick-texture bundle automatically
+- uses Blender headless to:
+  - import the GLB
+  - smart-unwrap UVs
+  - apply the original image as a texture
+  - create a principled material quickly
+  - export a quick textured GLB
+- uploads the result automatically back to Nexa
 
-HOW TO USE IT
-1. In Nexa 3D Studio Web, create an Apply Package and send it to the Worker Queue.
-2. In Nexa 3D Worker Local, keep the worker running.
-3. The package will appear automatically under Apply Packages.
-4. Open the watched result folder and place the finished GLB / GLTF / ZIP there.
-5. The worker uploads it back to the website automatically.
+FILES INCLUDED
+- src/backend/quick-texture-processor.js
+- src/backend/quick-texture-bridge.js
+- scripts/start-quick-texture-bridge.js
+
+REQUIREMENTS
+- Blender installed locally
+- working worker token
+- the web update 1.7.0 installed
+- Windows is recommended for this version because ZIP extraction uses Expand-Archive
+
+BASIC USE
+1. Install the web update 1.7.0.
+2. Add the one-click Quick Texture button in the website preview area.
+3. Install these worker files.
+4. Set environment variables:
+   - NEXA_QUICK_TEXTURE_BASE_URL
+   - NEXA_QUICK_TEXTURE_WORKER_TOKEN
+   - NEXA_QUICK_TEXTURE_WORKER_ID
+   - NEXA_BLENDER_PATH (optional if Blender is in a default path)
+5. Start the bridge:
+   node scripts/start-quick-texture-bridge.js
 
 IMPORTANT
-- This update automates the transfer and return flow.
-- It does NOT automatically perform artistic 3D enhancement by itself.
-- You still need your local workflow or software to produce the finished model file.
+This is a fast automatic color + texture pass.
+It is not a full PBR authoring suite.
+The goal is speed, convenience, and a one-click workflow similar to what you described.
