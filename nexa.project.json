@@ -1,10 +1,10 @@
 {
     "name": "Nexa 3D Worker Local",
-    "version": "1.1.0",
-    "application_version": "1.1.0",
+    "version": "1.1.1",
+    "application_version": "1.1.1",
     "type": "electron-desktop",
     "platform": "windows-x64",
     "description": "Local image-to-3D GPU worker for Nexa 3D Studio. No OpenAI.",
-    "workspace_revision": "1.0.9",
-    "updated_at": "2026-08-11 12:55:36"
+    "workspace_revision": "1.0.10",
+    "updated_at": "2026-08-11 14:51:58"
 }

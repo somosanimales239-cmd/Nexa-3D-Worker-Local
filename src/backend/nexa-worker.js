@@ -4,8 +4,9 @@ const fsp = fs.promises;
 const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
+const { ApplyPackageStore } = require('./apply-package-store');
 
-const VERSION = '1.0.4';
+const VERSION = '1.1.1';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -59,11 +60,29 @@ async function validateGlb(file) {
   return { buffer, sha256: crypto.createHash('sha256').update(buffer).digest('hex') };
 }
 
+
+async function findResultCandidate(dir) {
+  if (!dirExists(dir)) return null;
+  const entries = await fsp.readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const ext = path.extname(entry.name).toLowerCase();
+    if (!['.glb', '.gltf', '.zip'].includes(ext)) continue;
+    const full = path.join(dir, entry.name);
+    const stat = await fsp.stat(full);
+    files.push({ file: full, stat });
+  }
+  files.sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs);
+  return files[0]?.file || null;
+}
+
 class NexaWorker {
   constructor(store, engines, callbacks = {}) {
     this.store = store;
     this.engines = engines;
     this.callbacks = callbacks;
+    this.applyPackages = new ApplyPackageStore(store.paths().userData);
     this.running = false;
     this.busy = false;
     this.stopRequested = false;
@@ -127,6 +146,121 @@ class NexaWorker {
       if (!response.ok || data.ok === false) throw new Error(data.error || `Nexa returned HTTP ${response.status}`);
       return data;
     } finally { clearTimeout(timer); }
+  }
+
+
+  async claimDispatch() {
+    const cfg = this.config();
+    const data = await this.requestJson('dispatch-next.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: VERSION });
+    return data.job || null;
+  }
+
+  async dispatchProgress(job, progress, stage, message = '') {
+    await this.requestJson('dispatch-progress.php', {
+      dispatch_id: job.dispatch_id, claim_token: job.claim_token, progress, stage, message,
+      worker_id: this.config().worker_id, version: VERSION
+    });
+  }
+
+  async dispatchFail(job, error, stage = 'Worker failed') {
+    try {
+      await this.requestJson('dispatch-fail.php', { dispatch_id: job.dispatch_id, claim_token: job.claim_token, error: String(error).slice(0, 3000), stage });
+    } catch (reportError) {
+      this.log(`Could not report dispatch failure to Nexa: ${reportError.message}`, 'error');
+    }
+  }
+
+  async downloadDispatchPackage(job, target) {
+    const cfg = this.config();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), cfg.http_timeout_seconds * 1000);
+    try {
+      const response = await fetch(job.package_url, {
+        headers: {
+          'Authorization': `Bearer ${cfg.worker_token}`,
+          'X-Nexa-3D-Worker-Token': cfg.worker_token,
+          'X-Nexa-3D-Claim': job.claim_token,
+          'User-Agent': `Nexa-3D-Worker-Local/${VERSION}`
+        },
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`Package download failed HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      await fsp.mkdir(path.dirname(target), { recursive: true });
+      await fsp.writeFile(target, bytes);
+      return bytes.length;
+    } finally { clearTimeout(timer); }
+  }
+
+  async uploadDispatchResult(job, resultFile) {
+    const cfg = this.config();
+    const bytes = await fsp.readFile(resultFile);
+    const form = new FormData();
+    form.append('dispatch_id', job.dispatch_id);
+    form.append('claim_token', job.claim_token);
+    form.append('result', new Blob([bytes], { type: 'application/octet-stream' }), path.basename(resultFile));
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(cfg.http_timeout_seconds, 600) * 1000);
+    try {
+      const response = await fetch(cfg.nexa_api_base + 'dispatch-result.php', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${cfg.worker_token}`, 'X-Nexa-3D-Worker-Token': cfg.worker_token, 'User-Agent': `Nexa-3D-Worker-Local/${VERSION}` },
+        body: form,
+        signal: controller.signal
+      });
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error(`Nexa returned HTTP ${response.status}: ${text.slice(0, 700)}`); }
+      if (!response.ok || data.ok === false) throw new Error(data.error || `Nexa returned HTTP ${response.status}`);
+      return data;
+    } finally { clearTimeout(timer); }
+  }
+
+  async stageDispatchPackage(job) {
+    const inbox = path.join(this.store.paths().work, 'dispatch-inbox', String(job.dispatch_id));
+    const zipPath = path.join(inbox, String(job.package_name || `apply-package-${job.dispatch_id}.zip`));
+    try {
+      await this.dispatchProgress(job, 8, 'Downloading apply package', 'Retrieving the Apply Package ZIP from Nexa.');
+      const bytes = await this.downloadDispatchPackage(job, zipPath);
+      await this.dispatchProgress(job, 20, 'Apply package ready', `${bytes} bytes downloaded.`);
+      const local = await this.applyPackages.importRemotePackage(job, zipPath);
+      await this.dispatchProgress(job, 40, 'Waiting for local result file', `Place the finished GLB / GLTF / ZIP inside: ${local.result_drop_folder}`);
+      this.log(`Dispatch ${job.dispatch_id} imported automatically. Waiting for result file in ${local.result_drop_folder}.`);
+      return local;
+    } catch (error) {
+      await this.dispatchFail(job, error.message, 'Apply package staging failed');
+      this.log(`Dispatch ${job.dispatch_id} failed during staging: ${error.message}`, 'error');
+      return null;
+    }
+  }
+
+  async checkPendingDispatchUploads() {
+    const pending = this.applyPackages.pendingRemotePackages();
+    for (const item of pending) {
+      const resultFile = item.result_path && fileExists(item.result_path) ? item.result_path : await findResultCandidate(item.result_drop_folder || '');
+      if (!resultFile) continue;
+      const job = { dispatch_id: item.remote_dispatch_id, claim_token: item.remote_claim_token, output_name: item.output_name };
+      try {
+        this.applyPackages.updateRemoteState(item.id, { status: 'processing', bridge_state: 'uploading', result_path: resultFile, result_name: path.basename(resultFile) });
+        await this.dispatchProgress(job, 82, 'Uploading finished result', `Uploading ${path.basename(resultFile)} back to Nexa.`);
+        const response = await this.uploadDispatchResult(job, resultFile);
+        this.applyPackages.updateRemoteState(item.id, {
+          status: 'completed',
+          bridge_state: 'uploaded_to_nexa',
+          uploaded_back_to_nexa: true,
+          result_path: resultFile,
+          result_name: path.basename(resultFile),
+          result_size: (await fsp.stat(resultFile)).size,
+          remote_download_url: response.download_url || ''
+        });
+        this.processed += 1;
+        this.log(`Dispatch ${item.remote_dispatch_id} completed and uploaded back to Nexa.`);
+      } catch (error) {
+        this.applyPackages.updateRemoteState(item.id, { status: 'failed', bridge_state: 'upload_failed', last_error: error.message });
+        await this.dispatchFail(job, error.message, 'Dispatch upload failed');
+        this.log(`Dispatch ${item.remote_dispatch_id} failed while uploading result: ${error.message}`, 'error');
+      }
+    }
   }
 
   async heartbeat() {
@@ -365,10 +499,17 @@ class NexaWorker {
     while (this.running && !this.stopRequested) {
       try {
         await this.heartbeat();
+        await this.checkPendingDispatchUploads();
         const job = await this.claim();
         if (job) {
           this.log(`Claimed ${job.uuid}: ${job.asset_name || '3D asset'}.`);
           await this.processJob(job);
+          continue;
+        }
+        const dispatchJob = await this.claimDispatch();
+        if (dispatchJob) {
+          this.log(`Claimed dispatch ${dispatchJob.dispatch_id}: ${dispatchJob.output_name || dispatchJob.asset_name || 'Apply Package'}.`);
+          await this.stageDispatchPackage(dispatchJob);
           continue;
         }
       } catch (error) {
@@ -383,11 +524,19 @@ class NexaWorker {
   async runOnce() {
     if (this.busy) throw new Error('A job is already processing.');
     await this.heartbeat();
+    await this.checkPendingDispatchUploads();
     const job = await this.claim();
-    if (!job) return { ok: true, message: 'No queued 3D jobs were found.' };
-    this.log(`One-job mode claimed ${job.uuid}.`);
-    await this.processJob(job);
-    return { ok: true, message: 'One queued job was processed.', status: this.status() };
+    if (job) {
+      this.log(`One-job mode claimed ${job.uuid}.`);
+      await this.processJob(job);
+      return { ok: true, message: 'One queued 3D job was processed.', status: this.status() };
+    }
+    const dispatchJob = await this.claimDispatch();
+    if (dispatchJob) {
+      await this.stageDispatchPackage(dispatchJob);
+      return { ok: true, message: 'One queued Apply Package was downloaded and staged for automatic upload.', status: this.status() };
+    }
+    return { ok: true, message: 'No queued 3D or Apply Package jobs were found.' };
   }
 
   async generateLocalTest(payload = {}) {

@@ -55,17 +55,21 @@ function renderApplyPackages(list){
     return;
   }
   wrap.innerHTML=state.applyPackages.map((item)=>`<article class="card apply-card">
-    <div class="card-head"><div><span class="kicker">APPLY PACKAGE</span><h3>${escapeHtml(item.output_name||item.asset_name||'Apply Package')}</h3><p class="muted">${escapeHtml(item.asset_name||'')} · Version: ${escapeHtml(item.version_name||'Current profile')}</p></div><span class="state-badge ${item.status==='completed'?'running':''}">${escapeHtml(String(item.status||'imported').toUpperCase())}</span></div>
+    <div class="card-head"><div><span class="kicker">${item.remote_dispatch_id?'AUTO WEB ↔ WORKER BRIDGE':'APPLY PACKAGE'}</span><h3>${escapeHtml(item.output_name||item.asset_name||'Apply Package')}</h3><p class="muted">${escapeHtml(item.asset_name||'')} · Version: ${escapeHtml(item.version_name||'Current profile')}${item.remote_dispatch_id?` · Dispatch ${escapeHtml(item.remote_dispatch_id)}`:''}</p></div><span class="state-badge ${item.status==='completed'?'running':''}">${escapeHtml(String(item.status||'imported').toUpperCase())}</span></div>
     <div class="metric-grid apply-metrics">
       <div class="metric"><span>Imported</span><strong>${escapeHtml(formatDate(item.imported_at))}</strong><small>${escapeHtml(item.source_name||'')}</small></div>
       <div class="metric"><span>References</span><strong>${Number(item.refs_count||0)}</strong><small>${item.extraction_ok?'Manifest read successfully':'Imported without extraction details'}</small></div>
-      <div class="metric"><span>Result file</span><strong>${escapeHtml(item.result_name||'Not attached')}</strong><small>${item.result_name?escapeHtml(formatBytes(item.result_size)):'Attach the completed GLB/GLTF/ZIP after processing'}</small></div>
+      <div class="metric"><span>Result file</span><strong>${escapeHtml(item.result_name||'Not attached')}</strong><small>${item.result_name?escapeHtml(formatBytes(item.result_size)):(item.remote_dispatch_id?'Drop the finished GLB/GLTF/ZIP into the watched folder for automatic upload.':'Attach the completed GLB/GLTF/ZIP after processing')}</small></div>
     </div>
+    ${item.remote_dispatch_id?`<div class="apply-brief"><b>Automatic bridge status</b><pre>${escapeHtml(item.bridge_state||'awaiting_result')}
+Watched folder: ${escapeHtml(item.result_drop_folder||'')}
+${item.uploaded_back_to_nexa?'Uploaded back to Nexa automatically.':'The worker will upload the first finished GLB / GLTF / ZIP it finds in the watched folder.'}</pre></div>`:''}
     ${item.brief?`<div class="apply-brief"><b>Brief preview</b><pre>${escapeHtml(String(item.brief).slice(0,900))}</pre></div>`:''}
     <div class="button-row">
       <button class="btn secondary" data-action="set-status" data-id="${item.id}" data-status="processing">Mark Processing</button>
       <button class="btn secondary" data-action="set-status" data-id="${item.id}" data-status="failed">Mark Failed</button>
       <button class="btn secondary" data-action="attach-result" data-id="${item.id}">Attach Result File</button>
+      ${item.result_drop_folder?`<button class="btn primary" data-action="open-path" data-path="${escapeHtml(item.result_drop_folder)}">Open Watched Result Folder</button>`:''}
       <button class="btn ghost" data-action="open-path" data-path="${escapeHtml(item.package_folder||item.zip_path||'')}">Open Package Folder</button>
       <button class="btn ghost" data-action="open-path" data-path="${escapeHtml(item.zip_path||'')}">Reveal ZIP</button>
       ${item.result_path?`<button class="btn primary" data-action="open-path" data-path="${escapeHtml(item.result_path)}">Reveal Result</button>`:''}

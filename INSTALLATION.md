@@ -1,36 +1,29 @@
-# Nexa 3D Worker Local v1.1.0 — Apply Package Workflow
+Nexa 3D Worker Local Update 1.1.1 — Automatic Web ↔ Worker Bridge
 
-## Purpose
-This is the worker-side companion update for the web Enhance 3D Phase 4.
+INSTALLATION
+1. Back up your current Nexa 3D Worker Local folder.
+2. Copy the files from this ZIP over your current worker project.
+3. Replace existing files when prompted.
+4. Start the worker again.
 
-It adds a new page called **Apply Packages** so you can:
-1. download an Apply Package ZIP from Nexa 3D Studio Web,
-2. import it into Nexa 3D Worker Local,
-3. process it locally,
-4. attach the finished GLB / GLTF / ZIP result.
+WHAT THIS UPDATE DOES
+- The worker now polls the web for queued Apply Package dispatch jobs.
+- When one is found, the worker automatically:
+  - claims it
+  - downloads the Apply Package ZIP
+  - imports it into Apply Packages locally
+  - creates a watched result folder
+  - waits for the finished GLB / GLTF / ZIP
+  - uploads the result back to Nexa automatically
 
-## Replace / add these files in your worker project
-- `main.js`
-- `preload.js`
-- `package.json`
-- `src/app.js`
-- `src/index.html`
-- `src/styles.css`
-- `src/backend/apply-package-store.js` (new)
+HOW TO USE IT
+1. In Nexa 3D Studio Web, create an Apply Package and send it to the Worker Queue.
+2. In Nexa 3D Worker Local, keep the worker running.
+3. The package will appear automatically under Apply Packages.
+4. Open the watched result folder and place the finished GLB / GLTF / ZIP there.
+5. The worker uploads it back to the website automatically.
 
-## New area
-Inside the worker app you will see a new navigation item:
-- **Apply Packages**
-
-## Basic flow
-- In the web page, create an Apply Package.
-- Download the ZIP.
-- In Nexa 3D Worker Local, open **Apply Packages**.
-- Choose the ZIP and click **Import Apply Package**.
-- When your local enhancement work is done, click **Attach Result File**.
-- The package stays organized locally with its ZIP, metadata and result.
-
-## Safety
-- Does not remove the original worker image-to-3D functionality.
-- Does not touch your existing Stable Fast 3D installation.
-- Keeps local apply package records in the worker app data folder.
+IMPORTANT
+- This update automates the transfer and return flow.
+- It does NOT automatically perform artistic 3D enhancement by itself.
+- You still need your local workflow or software to produce the finished model file.
