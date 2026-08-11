@@ -1,16 +1,26 @@
-Nexa 3D Worker Local v1.0.4 — Validation Report
+Nexa 3D Worker Local v1.1.0 - Apply Package Workflow
 
-PASS — package.json and nexa.project.json parse as valid JSON.
-PASS — Node syntax check: src/app.js.
-PASS — Node syntax check: src/backend/config-store.js.
-PASS — Node syntax check: src/backend/nexa-worker.js.
-PASS — Full existing `npm run validate` suite.
-PASS — Delivery validator: 12 required project files present in assembled validation source.
-PASS — Project validator: isolated local worker contract verified.
-PASS — Baseline tests: 3/3.
-PASS — Static UI contract: all 78 DOM IDs referenced by src/app.js exist in src/index.html.
-PASS — ConfigStore migration test: existing HF_HOME is imported when hf_cache_dir is absent, and explicit hf_cache_dir persists.
-PASS — Heavy work root test: when hf_cache_dir is configured, per-job temp work resolves under <hf_cache_dir>/nexa-worker-temp.
-PASS — Current baseline files used for the patch match the connected GitHub main branch blob SHAs for package.json, src/app.js, src/backend/config-store.js, src/backend/nexa-worker.js and src/index.html.
+Validation summary:
+- Syntax OK:
+  - main.js
+  - preload.js
+  - src/app.js
+  - src/backend/apply-package-store.js
+  - src/backend/config-store.js (existing compatibility)
+  - src/backend/nexa-worker.js (existing compatibility)
+- No changes were made to the Stable Fast 3D generation core.
+- This update adds a new local Apply Packages workflow as a safe companion to the web Phase 4 update.
 
-No database migration. No website files. No GitHub Actions changes. No new npm dependency.
+What this update adds:
+- New Apply Packages page in Nexa 3D Worker Local
+- Import Apply Package ZIP files exported from Nexa 3D Studio Web
+- Local organized list of imported packages
+- Read manifest / brief when available
+- Mark package status: imported / processing / failed / completed
+- Attach completed GLB / GLTF / ZIP result files to each package
+- Reveal package folder / ZIP / attached result file
+- Delete local package records safely
+
+Important:
+- This update does not replace the original image-to-3D worker flow.
+- It adds a separate organized block to help manage web exported Apply Packages.

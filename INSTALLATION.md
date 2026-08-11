@@ -1,17 +1,36 @@
-# Nexa 3D Worker Local v1.0.4 — Hugging Face Cache Location Fix
+# Nexa 3D Worker Local v1.1.0 — Apply Package Workflow
 
-Apply this ZIP to the existing **Nexa 3D Worker Local** project using Manual Delivery, then Push to GitHub & Build as usual.
+## Purpose
+This is the worker-side companion update for the web Enhance 3D Phase 4.
 
-After installing v1.0.4:
+It adds a new page called **Apply Packages** so you can:
+1. download an Apply Package ZIP from Nexa 3D Studio Web,
+2. import it into Nexa 3D Worker Local,
+3. process it locally,
+4. attach the finished GLB / GLTF / ZIP result.
 
-1. Open **Engine Setup**.
-2. Confirm **Repository folder** is still your existing Stable Fast 3D installation.
-3. Confirm **Engine Python** is still the existing `.venv\Scripts\python.exe`.
-4. Set **Hugging Face cache folder** to a drive with enough free space, for example `D:\N3D\HuggingFace`.
-5. Keep the existing Hugging Face token.
-6. Keep **Force CPU** enabled while the installed PyTorch build is CPU-only.
-7. Save settings, then start the Worker and run one generation.
-8. Activity & Logs will print the exact Hugging Face cache path used by Stable Fast 3D before the model starts.
-9. While that cache folder is configured, Nexa also places temporary per-job Stable Fast 3D work under `<cache folder>\nexa-worker-temp` instead of filling the Windows application-data drive.
+## Replace / add these files in your worker project
+- `main.js`
+- `preload.js`
+- `package.json`
+- `src/app.js`
+- `src/index.html`
+- `src/styles.css`
+- `src/backend/apply-package-store.js` (new)
 
-This update does **not** reinstall Stable Fast 3D and does not modify the Nexa website, GitHub Actions, project data, login, or other Nexa modules.
+## New area
+Inside the worker app you will see a new navigation item:
+- **Apply Packages**
+
+## Basic flow
+- In the web page, create an Apply Package.
+- Download the ZIP.
+- In Nexa 3D Worker Local, open **Apply Packages**.
+- Choose the ZIP and click **Import Apply Package**.
+- When your local enhancement work is done, click **Attach Result File**.
+- The package stays organized locally with its ZIP, metadata and result.
+
+## Safety
+- Does not remove the original worker image-to-3D functionality.
+- Does not touch your existing Stable Fast 3D installation.
+- Keeps local apply package records in the worker app data folder.

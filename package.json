@@ -1,7 +1,7 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.0.4",
-  "description": "Local Windows GPU worker for Nexa 3D Studio image-to-3D generation",
+  "version": "1.1.0",
+  "description": "Local Windows GPU worker for Nexa 3D Studio image-to-3D generation and Apply Package workflow",
   "main": "main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",

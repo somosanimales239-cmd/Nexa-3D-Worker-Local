@@ -128,6 +128,16 @@
         <article class="card console-card"><div class="card-head"><div><span class="kicker">INSTALLER OUTPUT</span><h3>Engine setup log</h3></div><button class="text-btn" id="clearEngineLog">Clear</button></div><pre id="engineLog">Ready.</pre></article>
       </section>
 
+
+      <section class="page" data-page-panel="apply">
+        <div class="section-intro"><div><span class="eyebrow">PHASE 4 COMPANION</span><h2>Apply Packages</h2><p>This area is for the packages created in Nexa 3D Studio after <b>Create Apply Package</b>. Download the ZIP from the website, import it here, process the model locally, and attach the finished result file.</p></div><div class="button-row"><button class="btn secondary" id="chooseApplyZipBtn">Choose Apply Package ZIP</button><button class="btn primary" id="importApplyZipBtn">Import Apply Package</button></div></div>
+        <article class="card form-card narrow">
+          <label>Selected Apply Package ZIP<input id="applyZipPath" type="text" readonly placeholder="Choose the ZIP exported from Nexa 3D Studio"></label>
+          <p class="muted">Organized flow: 1) download Apply Package ZIP from the web, 2) import it here, 3) process the enhancement locally, 4) attach the resulting GLB / GLTF / ZIP so it stays organized inside the worker.</p>
+        </article>
+        <div class="grid" id="applyPackageList"></div>
+      </section>
+
       <section class="page" data-page-panel="test">
         <div class="section-intro"><div><span class="eyebrow">STEP 3 · OPTIONAL TEST</span><h2>Generate a GLB directly on this PC</h2><p>Use the same selected engine without Nexa to verify that Image→3D is actually working before accepting website jobs.</p></div></div>
         <div class="grid two">

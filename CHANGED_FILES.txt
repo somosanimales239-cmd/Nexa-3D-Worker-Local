@@ -1,19 +1,7 @@
-NEXA 3D WORKER LOCAL v1.0.4 — HUGGING FACE CACHE LOCATION FIX
-
-Changed:
+main.js
+preload.js
 package.json
-nexa.project.json
-src/index.html
 src/app.js
-src/backend/config-store.js
-src/backend/nexa-worker.js
-
-Purpose:
-- Add a visible Hugging Face cache folder setting in Engine Setup.
-- Import the existing Windows HF_HOME/HF_HUB_CACHE value on first run when available.
-- Persist the selected cache folder inside Nexa Worker settings.
-- Explicitly force Stable Fast 3D to use HF_HOME and HF_HUB_CACHE from that setting when the Python process starts.
-- Create the cache folder automatically and log the exact active cache path before generation.
-- Move per-job Stable Fast 3D temporary input/output work to the selected large-storage drive while that cache setting is active; temporary job folders are still removed when keep_temp is off.
-- Keep existing worker authentication, job protocol, Stable Fast 3D repo/Python paths, and all unrelated behavior unchanged.
-- Application version synchronized to 1.0.4.
+src/index.html
+src/styles.css
+src/backend/apply-package-store.js

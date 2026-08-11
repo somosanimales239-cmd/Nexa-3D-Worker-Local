@@ -6,11 +6,13 @@ const { ConfigStore } = require('./src/backend/config-store');
 const { probeSystem } = require('./src/backend/system-probe');
 const { EngineManager } = require('./src/backend/engine-manager');
 const { NexaWorker } = require('./src/backend/nexa-worker');
+const { ApplyPackageStore } = require('./src/backend/apply-package-store');
 
 let mainWindow = null;
 let store = null;
 let worker = null;
 let engines = null;
+let applyPackages = null;
 
 function send(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
@@ -50,7 +52,8 @@ function registerIpc() {
     config: store.getPublicConfig(),
     worker: worker.status(),
     system: await probeSystem(),
-    paths: store.paths()
+    paths: store.paths(),
+    apply_packages: applyPackages.list()
   }));
 
   ipcMain.handle('settings:save', async (_event, payload) => {
@@ -71,11 +74,33 @@ function registerIpc() {
   ipcMain.handle('engine:probe', async () => engines.probeEngines());
   ipcMain.handle('engine:test-generation', async (_event, payload) => worker.generateLocalTest(payload || {}));
 
+  ipcMain.handle('apply:list', async () => ({ ok: true, packages: applyPackages.list() }));
+  ipcMain.handle('apply:import', async (_event, payload) => ({ ok: true, item: await applyPackages.importPackage(payload?.path || '') }));
+  ipcMain.handle('apply:set-status', async (_event, payload) => ({ ok: true, item: applyPackages.setStatus(payload?.id, payload?.status) }));
+  ipcMain.handle('apply:attach-result', async (_event, payload) => ({ ok: true, item: applyPackages.attachResult(payload?.id, payload?.path) }));
+  ipcMain.handle('apply:delete', async (_event, payload) => applyPackages.deletePackage(payload?.id));
+
   ipcMain.handle('file:pick-image', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       title: 'Choose an image for local 3D test',
       properties: ['openFile'],
       filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+  ipcMain.handle('file:pick-apply-zip', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Choose a Nexa Apply Package ZIP',
+      properties: ['openFile'],
+      filters: [{ name: 'ZIP files', extensions: ['zip'] }]
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+  ipcMain.handle('file:pick-result', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Choose the completed result file',
+      properties: ['openFile'],
+      filters: [{ name: '3D Results', extensions: ['glb', 'gltf', 'zip'] }]
     });
     return result.canceled ? null : result.filePaths[0];
   });
@@ -104,6 +129,7 @@ function registerIpc() {
 app.whenReady().then(async () => {
   store = new ConfigStore(app.getPath('userData'), safeStorage);
   engines = new EngineManager(store, (line) => send('engine:log', line));
+  applyPackages = new ApplyPackageStore(app.getPath('userData'));
   worker = new NexaWorker(store, engines, {
     onStatus: (status) => send('worker:status-changed', status),
     onLog: (line) => send('worker:log', line),
