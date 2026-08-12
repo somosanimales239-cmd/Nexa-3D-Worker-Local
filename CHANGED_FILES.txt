@@ -1,4 +1,3 @@
 src/backend/nexa-worker.js
-src/backend/multi-view-texture.js
 package.json
 nexa.project.json

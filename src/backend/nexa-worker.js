@@ -8,7 +8,7 @@ const { ApplyPackageStore } = require('./apply-package-store');
 const { quickTextureJob } = require('./quick-texture-processor');
 const { bakeMultiViewTexture } = require('./multi-view-texture');
 
-const VERSION = '1.6.3';
+const VERSION = '1.7.1';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -533,9 +533,17 @@ class NexaWorker {
     await fsp.mkdir(outputDir, { recursive: true });
     const args = [runPy, image, '--output-dir', outputDir];
     const quality = String(payload?.quality || 'standard');
-    const textureResolution = quality === 'high' ? '2048' : quality === 'draft' ? '512' : '1024';
+    const requestedSf3dResolution = Number(payload?.sf3d_texture_resolution || 0);
+    const textureResolution = requestedSf3dResolution > 0
+      ? String(Math.max(512, Math.min(2048, requestedSf3dResolution)))
+      : (quality === 'high' ? '2048' : quality === 'draft' ? '512' : '1024');
     args.push('--texture-resolution', textureResolution);
+    args.push('--batch_size', '1');
+    if (!cfg.force_cpu) args.push('--device', 'cuda');
     const env = { ...process.env };
+    if (!cfg.force_cpu) {
+      env.PYTORCH_CUDA_ALLOC_CONF = env.PYTORCH_CUDA_ALLOC_CONF || 'expandable_segments:True';
+    }
     if (cfg.force_cpu) env.SF3D_USE_CPU = '1';
     if (cfg.hf_token) env.HF_TOKEN = cfg.hf_token;
     const hfCacheDir = String(cfg.hf_cache_dir || env.HF_HOME || '').trim();
@@ -665,8 +673,8 @@ class NexaWorker {
       // We preserve ONE coherent base mesh from the Front reference, then use Back/Left/Right only
       // as texture evidence projected onto that same mesh.
       const baseOut = path.join(jobDir, 'view-front');
-      const basePayload = { ...payload, quality: 'high', generate_textures: false, optimize_web: false };
-      await this.progress(job, 14, 'Reconstructing base geometry', 'Creating one clean high-quality geometry from the Front reference only. The other views will improve the result without rebuilding extra bodies.');
+      const basePayload = { ...payload, quality: 'high', generate_textures: false, optimize_web: false, sf3d_texture_resolution: 1024 };
+      await this.progress(job, 14, 'Reconstructing base geometry', 'Creating one clean base geometry from the Front reference only. SF3D uses a VRAM-safe 1024px temporary bake; the final professional texture is still produced later at up to 4096px.');
       let finalGlb = await this.generateWithProvider(
         frontImage,
         baseOut,

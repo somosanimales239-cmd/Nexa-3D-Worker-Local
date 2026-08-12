@@ -1,7 +1,7 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.7.0",
-  "description": "Local Windows worker for Nexa 3D Studio with single locked base geometry, orientation-correct multi-view texture refinement and professional polish finish.",
+  "version": "1.7.1",
+  "description": "Nexa 3D Worker Local 1.7.1 with 8GB VRAM-safe SF3D base generation, corrected multi-view refine and professional polish.",
   "main": "main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",

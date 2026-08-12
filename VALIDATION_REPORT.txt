@@ -1,5 +1,6 @@
 Validation summary
-- node --check: PASS (src/backend/nexa-worker.js)
-- node --check: PASS (src/backend/multi-view-texture.js)
-- Version updated to 1.7.0.
-- Professional refine pipeline now uses one locked base mesh plus orientation-correct bake and polish.
+- node --check src/backend/nexa-worker.js: PASS
+- SF3D base temporary texture: 1024px
+- Final Blender professional texture: up to 4096px
+- batch_size: 1
+- CUDA allocator fragmentation mitigation enabled

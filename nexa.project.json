@@ -1,10 +1,10 @@
 {
     "name": "Nexa 3D Worker Local",
-    "version": "1.7.0",
-    "application_version": "1.7.0",
+    "version": "1.7.1",
+    "application_version": "1.7.1",
     "type": "electron-desktop",
     "platform": "windows-x64",
-    "description": "Local image-to-3D worker with one locked base mesh, orientation-correct multi-view texture refinement and professional polish.",
-    "workspace_revision": "1.0.23",
-    "updated_at": "2026-08-12 13:43:40"
+    "description": "8GB-VRAM-safe professional refine worker: one base mesh, 1024px temporary SF3D bake, corrected multi-view texture and final professional polish.",
+    "workspace_revision": "1.0.24",
+    "updated_at": "2026-08-12 16:44:54"
 }
