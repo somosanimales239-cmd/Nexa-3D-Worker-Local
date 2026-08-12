@@ -1,17 +1,21 @@
-# Nexa 3D Worker Local 1.6.3 — Single-Base Geometry Quality Fix
-
-This update removes the destructive geometry-fusion path introduced for multi-view character generation.
-
-## What changes
-
-- Front remains the single authoritative geometry reconstruction.
-- Back / Left / Right are no longer reconstructed into separate complete 3D bodies.
-- No 180-degree Back body rotation, object join, or voxel remesh is used in the generation flow.
-- Back / Left / Right are used only as texture evidence on the single coherent base mesh.
-- 4096px multi-view texture bake remains enabled, with the existing memory-safe 2048 fallback only for real allocation failures.
+# Nexa 3D Worker Local Update 1.7.0 — Single Mesh Professional Refine + Polish
 
 ## Install
+Copy and replace these files inside the local worker project:
 
-Upload this ZIP through Nexa App Builder Pro -> Manual Delivery for Nexa 3D Worker Local, Apply, validate, Push to GitHub & Build, then install the resulting Worker 1.6.3.
+- `src/backend/nexa-worker.js`
+- `src/backend/multi-view-texture.js`
+- `package.json`
+- `nexa.project.json`
 
-Do not reinstall Stable Fast 3D, Blender, Python, or the Hugging Face cache.
+## What changes
+- Keeps **one base geometry from the Front view**.
+- Uses Back / Left / Right only for **orientation-correct multi-view texture refinement**.
+- Adds a **professional polish pass** during Blender baking.
+- Fixes the logic so Front / Back are not treated as duplicate full-body reconstructions.
+- Adds explicit `front_positive_y` orientation mode and better projection weighting.
+
+## After install
+1. Restart the local Worker.
+2. Start a new job from the updated web create screen.
+3. For best results, use Front + Back at minimum.

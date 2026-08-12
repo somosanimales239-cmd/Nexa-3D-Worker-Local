@@ -1,8 +1,4 @@
 src/backend/nexa-worker.js
+src/backend/multi-view-texture.js
 package.json
 nexa.project.json
-VERSION.txt
-INSTALLATION.md
-VALIDATION_REPORT.txt
-CHANGED_FILES.txt
-SHA256SUMS.txt

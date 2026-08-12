@@ -1,7 +1,7 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.6.3",
-  "description": "Local Windows worker for Nexa 3D Studio image-to-3D, Apply Packages, Quick Texture and single-base multi-view texture projection without destructive geometry fusion",
+  "version": "1.7.0",
+  "description": "Local Windows worker for Nexa 3D Studio with single locked base geometry, orientation-correct multi-view texture refinement and professional polish finish.",
   "main": "main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",

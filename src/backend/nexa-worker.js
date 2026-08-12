@@ -653,37 +653,45 @@ class NexaWorker {
 
       const extraViews = await this.prepareMultiViewInputs(job, inputDir);
       const viewImages = [{ name:'front', image:frontImage }, ...extraViews.map(v => ({ name:v.name, image:v.image, reference:v.reference }))];
+      const refine = payload?.professional_refine || {};
+      const refineEnabled = refine.enabled === true || payload?.pipeline === 'single_base_professional_refine';
+      const polishLevel = String(refine.polish_level || (payload?.quality === 'high' ? 'professional' : 'standard'));
+      const orientationMode = String(refine.orientation_mode || 'front_positive_y');
+      const refineMode = String(refine.refine_mode || (refineEnabled ? 'professional_refine' : 'standard_multiview'));
 
       // IMPORTANT QUALITY RULE: Stable Fast 3D is a single-image reconstruction engine.
       // Never create complete Front/Back/Side bodies and voxel-fuse them together.
       // That duplicates invented geometry and can make a good front reconstruction dramatically worse.
       // We preserve ONE coherent base mesh from the Front reference, then use Back/Left/Right only
-      // as additional texture evidence projected onto that same mesh.
-      const baseOut=path.join(jobDir,'view-front');
-      const basePayload={...payload,quality:'high',generate_textures:false,optimize_web:false};
-      await this.progress(job, 14, 'Reconstructing base geometry', 'Creating one clean high-quality geometry from the Front reference. Back and side references will not create duplicate bodies.');
-      let finalGlb=await this.generateWithProvider(
+      // as texture evidence projected onto that same mesh.
+      const baseOut = path.join(jobDir, 'view-front');
+      const basePayload = { ...payload, quality: 'high', generate_textures: false, optimize_web: false };
+      await this.progress(job, 14, 'Reconstructing base geometry', 'Creating one clean high-quality geometry from the Front reference only. The other views will improve the result without rebuilding extra bodies.');
+      let finalGlb = await this.generateWithProvider(
         frontImage,
         baseOut,
         basePayload,
-        this.mappedViewProgress(job,'BASE GEOMETRY',14,72)
+        this.mappedViewProgress(job, 'BASE GEOMETRY', 14, 72)
       );
       await validateGlb(finalGlb);
-      await this.progress(job, 78, 'Base geometry preserved', 'Single coherent Front reconstruction retained. Multi-view references will improve appearance without voxel-merging extra bodies.');
+      await this.progress(job, 78, 'Base geometry preserved', 'Single coherent Front reconstruction retained. Back and side references will now improve orientation, continuity and finish.');
 
       if (viewImages.length > 1) {
-        await this.progress(job, 82, 'Multi-View Texture', 'Projecting Front / Back / Side references onto the single base mesh and preparing a 4096px color-safe bake.');
-        const textured=await bakeMultiViewTexture({
-          model:finalGlb,
-          views:viewImages.map(view=>({name:view.name,file:view.image})),
-          outputDir:path.join(jobDir,'textured'),
-          blenderPath:cfg.blender_path || '',
-          textureSize:4096,
-          onLog:(line)=>this.log(`[Multi-View Texture] ${line}`),
-          onChild:(child)=>{this.currentChild=child;}
+        await this.progress(job, 82, refineEnabled ? 'Professional multi-view refine' : 'Multi-View Texture', refineEnabled ? 'Applying orientation-correct reference projection and professional polish on the locked base mesh.' : 'Projecting Front / Back / Side references onto the single base mesh and preparing a 4096px color-safe bake.');
+        const textured = await bakeMultiViewTexture({
+          model: finalGlb,
+          views: viewImages.map(view => ({ name: view.name, file: view.image })),
+          outputDir: path.join(jobDir, 'textured'),
+          blenderPath: cfg.blender_path || '',
+          textureSize: 4096,
+          orientationMode,
+          refineMode,
+          polishLevel,
+          onLog: (line) => this.log(`[Multi-View Texture] ${line}`),
+          onChild: (child) => { this.currentChild = child; }
         });
-        finalGlb=textured.output;
-        await this.progress(job, 94, 'Texture bake completed', `${textured.viewCount} reference views baked onto one coherent mesh in a ${textured.textureSize}px texture atlas${textured.fallbackFrom ? ' after an automatic memory-safe retry' : ''}.`);
+        finalGlb = textured.output;
+        await this.progress(job, 94, refineEnabled ? 'Professional polish completed' : 'Texture bake completed', `${textured.viewCount} reference views baked onto one coherent mesh in a ${textured.textureSize}px texture atlas${textured.fallbackFrom ? ' after an automatic memory-safe retry' : ''}${refineEnabled ? ` · finish ${textured.polishLevel}` : ''}.`);
       }
 
       const validated = await validateGlb(finalGlb);

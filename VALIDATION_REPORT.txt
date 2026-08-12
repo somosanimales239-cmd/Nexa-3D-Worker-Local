@@ -1,20 +1,5 @@
-Nexa 3D Worker Local 1.6.3 — VALIDATION REPORT
-
-Purpose: remove destructive multi-body geometry fusion while retaining multi-view texture projection.
-
-Static checks:
-- src/backend/nexa-worker.js Node syntax: PASS
-- package.json JSON parse: PASS
-- nexa.project.json JSON parse: PASS
-- Worker VERSION constant: 1.6.3
-- No fuseMultiViewGeometry import in nexaworker: PASS
-- No per-reference geometry generation loop in multi-view path: PASS
-- One Front/base geometry generation in multi-view path: PASS
-- Back/Left/Right retained as texture references: PASS
-- 4096px bake request retained: PASS
-
-Behavioral contract:
-Front -> one coherent geometry -> multi-view texture projection -> GLB.
-Back/Left/Right never become additional complete bodies and are never voxel-fused into the base mesh.
-
-This package does not claim that Stable Fast 3D can reconstruct true rear geometry from a second image. Its purpose is to stop quality regression and use extra references only where the current engine can use them safely.
+Validation summary
+- node --check: PASS (src/backend/nexa-worker.js)
+- node --check: PASS (src/backend/multi-view-texture.js)
+- Version updated to 1.7.0.
+- Professional refine pipeline now uses one locked base mesh plus orientation-correct bake and polish.
