@@ -1,1 +1,2 @@
-Nexa 3D Worker Local 1.6.0 — Orientation Multi-View Texture Bake
+Nexa 3D Worker Local v1.6.1
+Final pre-GitHub source validation fix

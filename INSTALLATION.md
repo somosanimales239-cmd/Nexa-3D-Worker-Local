@@ -1,24 +1,27 @@
-# Nexa 3D Worker Local 1.6.0 — Orientation Multi-View Texture Bake
+# Nexa 3D Worker Local v1.6.1 — Final Pre-GitHub Source Validation Fix
 
-Install third, after Worker 1.5.0. This package is cumulative for the multi-view Worker stage.
+This is a source-only correction before the GitHub build.
 
-## Replace / add
+## Replace these files in the existing Nexa 3D Worker Local project
+- `src/app.js`
+- `src/backend/apply-package-store.js`
 - `src/backend/nexa-worker.js`
-- `src/backend/multi-view-reconstruction.js`
-- `src/backend/multi-view-texture.js` (new)
+- `src/backend/quick-texture-bridge.js`
 - `package.json`
+- `nexa.project.json`
 
-## What it does automatically after geometry reconstruction
-- Front is projected toward the front-facing surfaces.
-- Back is projected toward the rear-facing surfaces.
-- Left / Right, when supplied, are projected toward the matching side surfaces.
-- Transparent reference backgrounds use a neutral fallback instead of painting empty space black.
-- Blender generates a new quality UV atlas.
-- The orientation-aware projection material is baked to one 4096 x 4096 texture atlas.
-- The temporary projection graph is replaced with a normal baked PBR material.
-- The final result is exported as one GLB and uploaded back to Nexa automatically.
+## What was fixed
+- Rewrote the Apply Packages renderer so Nexa's local delimiter scanner no longer mistakes nested JavaScript template literals for broken braces.
+- Restored clean validated copies of the three backend files reported by Local build validation.
+- Increased application version to `1.6.1` consistently in `package.json` and `nexa.project.json`.
+- Strengthened `npm run validate` so it explicitly runs `node --check` on Apply Package, Quick Texture and Multi-View source files before GitHub packaging.
 
-There is no separate Quick Texture action required for this multi-view generation workflow.
+## Install
+1. Open the existing Nexa 3D Worker Local project in Manual Delivery.
+2. Upload this ZIP.
+3. Stage and apply the files.
+4. Return to Local build validation.
+5. Do not run Normalize Installer/Portable/ZIP unless a delivery configuration error is separately reported.
+6. When Local build validation is Ready, use Push to GitHub & Build.
 
-## Important accuracy note
-This update uses the current working 3D engine + Blender. It materially uses the Back/Side views instead of ignoring them, but it does not add a separate large generative texture model. Areas not visible in any supplied reference are blended from the nearest available views rather than semantically invented by a Meshy-class texturing model.
+No Blender, Stable Fast 3D, Hugging Face cache, worker token or local settings are changed by this update.

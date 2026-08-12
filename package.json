@@ -1,14 +1,14 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.6.0",
-  "description": "Local Windows worker for Nexa 3D Studio image-to-3D, Apply Packages and automatic Quick Texture and quality multi-view reconstruction and 4K orientation-aware texture baking",
+  "version": "1.6.1",
+  "description": "Local Windows worker for Nexa 3D Studio image-to-3D, Apply Packages, Quick Texture, multi-view reconstruction and orientation-aware texture baking",
   "main": "main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && node --check src/backend/config-store.js && node --check src/backend/system-probe.js && node --check src/backend/engine-manager.js && node --check src/backend/nexa-worker.js && node --check src/backend/multi-view-reconstruction.js && node --check src/backend/multi-view-texture.js && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && node --check src/backend/config-store.js && node --check src/backend/system-probe.js && node --check src/backend/engine-manager.js && node --check src/backend/apply-package-store.js && node --check src/backend/quick-texture-bridge.js && node --check src/backend/quick-texture-processor.js && node --check src/backend/nexa-worker.js && node --check src/backend/multi-view-reconstruction.js && node --check src/backend/multi-view-texture.js && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "validate:delivery": "node scripts/validate-delivery.js",
     "validate:project": "node scripts/validate-project.js",

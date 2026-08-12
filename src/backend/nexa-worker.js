@@ -9,7 +9,7 @@ const { quickTextureJob } = require('./quick-texture-processor');
 const { fuseMultiViewGeometry } = require('./multi-view-reconstruction');
 const { bakeMultiViewTexture } = require('./multi-view-texture');
 
-const VERSION = '1.6.0';
+const VERSION = '1.6.1';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {

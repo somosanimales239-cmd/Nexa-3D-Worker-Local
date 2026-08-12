@@ -1,4 +1,6 @@
+src/app.js
+src/backend/apply-package-store.js
 src/backend/nexa-worker.js
-src/backend/multi-view-reconstruction.js
-src/backend/multi-view-texture.js
+src/backend/quick-texture-bridge.js
 package.json
+nexa.project.json
