@@ -78,14 +78,48 @@ async function detectInputs(bundleDir,manifest){
 
 function blenderScript(payload){
   return String.raw`
-import bpy, os, traceback
+import bpy, os
 
 input_model = r'''${payload.model}'''
 source_image = r'''${payload.source}'''
 output_glb = r'''${payload.output}'''
+object_type = '''${payload.objectType}'''
+paint_mode = '''${payload.paintMode}'''
+primary_hex = '''${payload.primaryColor}'''
+secondary_hex = '''${payload.secondaryColor}'''
+accent_hex = '''${payload.accentColor}'''
+use_secondary = ${payload.useSecondary ? 'True' : 'False'}
+use_accent = ${payload.useAccent ? 'True' : 'False'}
+preserve_existing = ${payload.preserveExisting ? 'True' : 'False'}
 metallic = ${payload.metallic}
 roughness = ${payload.roughness}
 saturation = ${payload.saturation}
+
+
+def srgb_to_linear(v):
+    v = max(0.0, min(1.0, v))
+    if v <= 0.04045:
+        return v / 12.92
+    return ((v + 0.055) / 1.055) ** 2.4
+
+
+def hex_rgba(value):
+    value = (value or '#808080').strip().lstrip('#')
+    if len(value) != 6:
+        value = '808080'
+    r = int(value[0:2], 16) / 255.0
+    g = int(value[2:4], 16) / 255.0
+    b = int(value[4:6], 16) / 255.0
+    return (srgb_to_linear(r), srgb_to_linear(g), srgb_to_linear(b), 1.0)
+
+primary = hex_rgba(primary_hex)
+secondary = hex_rgba(secondary_hex)
+accent = hex_rgba(accent_hex)
+colors = [primary]
+if use_secondary:
+    colors.append(secondary)
+if use_accent:
+    colors.append(accent)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=input_model)
@@ -117,64 +151,135 @@ def find_principled(mat):
     return bsdf
 
 
-def tune_existing_texture(mat, bsdf):
+def prepare_surface(bsdf):
+    if bsdf.inputs.get('Metallic') is not None:
+        bsdf.inputs['Metallic'].default_value = max(0.0, min(1.0, metallic))
+    if bsdf.inputs.get('Roughness') is not None:
+        bsdf.inputs['Roughness'].default_value = max(0.0, min(1.0, roughness))
+
+
+def disconnect_base(mat, bsdf):
     base = bsdf.inputs.get('Base Color')
     if base is None:
-        return False
-    links = list(base.links)
-    if not links:
-        return False
-    source_socket = links[0].from_socket
-    for link in links:
+        return None
+    for link in list(base.links):
         mat.node_tree.links.remove(link)
-    hsv = mat.node_tree.nodes.new('ShaderNodeHueSaturation')
-    hsv.inputs['Saturation'].default_value = saturation
-    mat.node_tree.links.new(source_socket, hsv.inputs['Color'])
-    mat.node_tree.links.new(hsv.outputs['Color'], base)
-    return True
+    return base
 
 
-def add_source_box_texture(mat, bsdf):
+def paint_color(mat, bsdf, rgba):
+    base = disconnect_base(mat, bsdf)
+    if base is not None:
+        base.default_value = rgba
+
+
+def existing_color_source(bsdf):
+    base = bsdf.inputs.get('Base Color')
+    if base is None or not base.links:
+        return None
+    return base.links[0].from_socket
+
+
+def connect_source_image(mat, bsdf, tint=None):
     if src_img is None:
         return False
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
+    base = disconnect_base(mat, bsdf)
+    if base is None:
+        return False
     tex = nodes.new('ShaderNodeTexImage')
     tex.image = src_img
     tex.projection = 'BOX'
-    tex.projection_blend = 0.28
+    tex.projection_blend = 0.32
     coord = nodes.new('ShaderNodeTexCoord')
     mapping = nodes.new('ShaderNodeMapping')
     hsv = nodes.new('ShaderNodeHueSaturation')
-    hsv.inputs['Saturation'].default_value = saturation
+    hsv.inputs['Saturation'].default_value = max(0.0, min(2.0, saturation))
     links.new(coord.outputs['Generated'], mapping.inputs['Vector'])
     links.new(mapping.outputs['Vector'], tex.inputs['Vector'])
     links.new(tex.outputs['Color'], hsv.inputs['Color'])
-    links.new(hsv.outputs['Color'], bsdf.inputs['Base Color'])
+    source_socket = hsv.outputs['Color']
+    if tint is not None:
+        mix = nodes.new('ShaderNodeMixRGB')
+        mix.blend_type = 'MULTIPLY'
+        mix.inputs['Fac'].default_value = 1.0
+        mix.inputs['Color2'].default_value = tint
+        links.new(source_socket, mix.inputs['Color1'])
+        source_socket = mix.outputs['Color']
+    links.new(source_socket, base)
     return True
 
+
+def tint_existing_texture(mat, bsdf, tint):
+    source_socket = existing_color_source(bsdf)
+    if source_socket is None:
+        return False
+    base = bsdf.inputs.get('Base Color')
+    for link in list(base.links):
+        mat.node_tree.links.remove(link)
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    mix = nodes.new('ShaderNodeMixRGB')
+    mix.blend_type = 'MULTIPLY'
+    mix.inputs['Fac'].default_value = 1.0
+    mix.inputs['Color2'].default_value = tint
+    links.new(source_socket, mix.inputs['Color1'])
+    links.new(mix.outputs['Color'], base)
+    return True
+
+slot_counter = 0
 for obj in objects:
+    obj['nexa_object_type'] = object_type
+    obj['nexa_quick_texture_mode'] = paint_mode
     if len(obj.data.materials) == 0:
         mat = bpy.data.materials.new(name='Nexa_QuickTexture')
         mat.use_nodes = True
         obj.data.materials.append(mat)
+
     for slot_index in range(len(obj.data.materials)):
-        mat = obj.data.materials[slot_index]
-        if mat is None:
-            mat = bpy.data.materials.new(name='Nexa_QuickTexture')
-            mat.use_nodes = True
+        original_mat = obj.data.materials[slot_index]
+        if original_mat is None:
+            original_mat = bpy.data.materials.new(name='Nexa_QuickTexture')
+            original_mat.use_nodes = True
+            obj.data.materials[slot_index] = original_mat
+
+        if paint_mode == 'material_parts':
+            mat = original_mat.copy()
+            mat.name = 'Nexa_ColorPart_%03d' % (slot_counter + 1)
             obj.data.materials[slot_index] = mat
+        else:
+            mat = original_mat
+
         bsdf = find_principled(mat)
-        if bsdf.inputs.get('Metallic') is not None:
-            bsdf.inputs['Metallic'].default_value = max(0.0, min(1.0, metallic))
-        if bsdf.inputs.get('Roughness') is not None:
-            bsdf.inputs['Roughness'].default_value = max(0.0, min(1.0, roughness))
-        preserved = tune_existing_texture(mat, bsdf)
-        if not preserved:
-            add_source_box_texture(mat, bsdf)
+        prepare_surface(bsdf)
+
+        if paint_mode == 'solid':
+            paint_color(mat, bsdf, primary)
+        elif paint_mode == 'material_parts':
+            paint_color(mat, bsdf, colors[slot_counter % len(colors)])
+        elif paint_mode == 'source_tint':
+            if not (preserve_existing and tint_existing_texture(mat, bsdf, primary)):
+                if not connect_source_image(mat, bsdf, primary):
+                    paint_color(mat, bsdf, primary)
+        elif paint_mode == 'source_image':
+            if preserve_existing and existing_color_source(bsdf) is not None:
+                pass
+            elif not connect_source_image(mat, bsdf, None):
+                paint_color(mat, bsdf, primary)
+        else:
+            paint_color(mat, bsdf, primary)
+        slot_counter += 1
+
+scene = bpy.context.scene
+scene['nexa_object_type'] = object_type
+scene['nexa_quick_texture_mode'] = paint_mode
+scene['nexa_primary_color'] = primary_hex
+scene['nexa_secondary_color'] = secondary_hex if use_secondary else ''
+scene['nexa_accent_color'] = accent_hex if use_accent else ''
 
 bpy.ops.export_scene.gltf(filepath=output_glb, export_format='GLB', export_texcoords=True, export_normals=True, export_materials='EXPORT', export_yup=True)
-print('NEXA_QUICK_TEXTURE_OK', output_glb)
+print('NEXA_QUICK_TEXTURE_OK', object_type, paint_mode, output_glb)
 `;
 }
 
@@ -195,7 +300,13 @@ async function quickTextureJob(options={}){
   const output=path.join(outputDir,'quick-textured.glb');
   const blender=resolveBlender(String(options.blenderPath||''));
   const script=path.join(os.tmpdir(),`nexa-quick-texture-${Date.now()}-${Math.random().toString(16).slice(2)}.py`);
-  const payload={model:inputs.model.replaceAll('\\','/'),source:inputs.source.replaceAll('\\','/'),output:output.replaceAll('\\','/'),metallic:Number(manifest.metallic??0.10),roughness:Number(manifest.roughness??0.62),saturation:Number(manifest.saturation??1.12)};
+  const payload={
+    model:inputs.model.replaceAll('\\','/'),source:inputs.source.replaceAll('\\','/'),output:output.replaceAll('\\','/'),
+    objectType:String(manifest.object_type||'Object').replaceAll("'",''),paintMode:String(manifest.paint_mode||'solid'),
+    primaryColor:String(manifest.primary_color||'#8B5E3C'),secondaryColor:String(manifest.secondary_color||'#F2E7D5'),accentColor:String(manifest.accent_color||'#20242A'),
+    useSecondary:Boolean(manifest.use_secondary),useAccent:Boolean(manifest.use_accent),preserveExisting:Boolean(manifest.preserve_existing_materials),
+    metallic:Number(manifest.metallic??0.0),roughness:Number(manifest.roughness??0.72),saturation:Number(manifest.saturation??1.0)
+  };
   await fsp.writeFile(script,blenderScript(payload),'utf8');
   try{await runBlender(blender,script,bundleDir,typeof options.onLog==='function'?options.onLog:()=>{},options.onChild);}finally{await fsp.rm(script,{force:true}).catch(()=>{});}
   if(!fileExists(output))throw new Error('Blender finished without creating quick-textured.glb.');

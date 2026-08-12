@@ -7,7 +7,7 @@ const { spawn, spawnSync } = require('child_process');
 const { ApplyPackageStore } = require('./apply-package-store');
 const { quickTextureJob } = require('./quick-texture-processor');
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -357,7 +357,7 @@ class NexaWorker {
       const size = await this.downloadQuickTextureBundle(job, zip);
       this.extractQuickTextureBundle(zip, bundleDir);
       await this.quickTextureProgress(job, 25, 'Bundle ready', `${size} bytes downloaded and extracted.`);
-      await this.quickTextureProgress(job, 40, 'Fast texture pass', 'Blender is preserving existing materials and applying a fast texture/color enhancement.');
+      await this.quickTextureProgress(job, 40, 'Fast texture pass', 'Blender is applying the selected Quick Texture paint / texture mode to the model.');
       const result = await quickTextureJob({
         bundleDir,
         outputDir,

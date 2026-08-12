@@ -1,6 +1,6 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Local Windows worker for Nexa 3D Studio image-to-3D, Apply Packages and automatic Quick Texture",
   "main": "main.js",
   "author": "Nexa App Builder Pro",
