@@ -1,21 +1,17 @@
-# Nexa 3D Worker Local 1.6.2 — Multi-View Texture 88% Bake Fix
+# Nexa 3D Worker Local 1.6.3 — Single-Base Geometry Quality Fix
 
-This is an incremental Worker source update. It does not change the Nexa 3D Studio web page, Stable Fast 3D installation, Hugging Face cache, Blender installation, or user settings.
+This update removes the destructive geometry-fusion path introduced for multi-view character generation.
 
-## Apply
-1. In Nexa App Builder Pro open Manual Delivery for the existing **Nexa 3D Worker Local** project.
-2. Create a new Manual Delivery and upload this ZIP.
-3. Apply staged files once.
-4. Confirm Local build validation is Ready.
-5. Push to GitHub & Build. If Nexa reports an externally uncertain dispatch after the push, use the already-installed GitHub dispatch reconciliation action rather than creating another source revision.
-6. Download/install the resulting **1.6.2** Windows Worker build.
-7. Re-queue the same Front + Back test.
+## What changes
 
-## What is fixed
-- Replaces the fragile diffuse/pass-filter texture bake with a color-only **Emission bake** in Cycles CPU mode.
-- Keeps 4096x4096 as the first texture bake resolution.
-- Falls back to 2048 only if Blender reports an actual memory-allocation failure.
-- Captures Blender Python tracebacks into the Worker error instead of returning only “GLB was not created”.
-- Makes normal progress telemetry retry up to three times and no longer aborts a successful local SF3D operation because a non-critical progress POST had one transient `fetch failed` error.
+- Front remains the single authoritative geometry reconstruction.
+- Back / Left / Right are no longer reconstructed into separate complete 3D bodies.
+- No 180-degree Back body rotation, object join, or voxel remesh is used in the generation flow.
+- Back / Left / Right are used only as texture evidence on the single coherent base mesh.
+- 4096px multi-view texture bake remains enabled, with the existing memory-safe 2048 fallback only for real allocation failures.
 
-No Blender reinstall is required.
+## Install
+
+Upload this ZIP through Nexa App Builder Pro -> Manual Delivery for Nexa 3D Worker Local, Apply, validate, Push to GitHub & Build, then install the resulting Worker 1.6.3.
+
+Do not reinstall Stable Fast 3D, Blender, Python, or the Hugging Face cache.

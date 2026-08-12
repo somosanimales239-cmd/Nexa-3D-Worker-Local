@@ -6,10 +6,9 @@ const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 const { ApplyPackageStore } = require('./apply-package-store');
 const { quickTextureJob } = require('./quick-texture-processor');
-const { fuseMultiViewGeometry } = require('./multi-view-reconstruction');
 const { bakeMultiViewTexture } = require('./multi-view-texture');
 
-const VERSION = '1.6.2';
+const VERSION = '1.6.3';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -653,36 +652,27 @@ class NexaWorker {
       }
 
       const extraViews = await this.prepareMultiViewInputs(job, inputDir);
-      const viewImages = [{ name:'front', image:frontImage, rotation_z:0 }, ...extraViews.map(v => ({ ...v, rotation_z: v.name === 'back' ? 180 : v.name === 'left' ? -90 : 90 }))];
-      const generatedViews = [];
-      const ranges = viewImages.length === 2 ? [[14,42],[43,70]] : viewImages.length === 3 ? [[14,34],[35,55],[56,72]] : [[14,30],[31,47],[48,62],[63,75]];
+      const viewImages = [{ name:'front', image:frontImage }, ...extraViews.map(v => ({ name:v.name, image:v.image, reference:v.reference }))];
 
-      for (let i=0;i<viewImages.length;i++) {
-        const view=viewImages[i];
-        const viewOut=path.join(jobDir,`view-${view.name}`);
-        const viewPayload={...payload,quality:'high',generate_textures:false,optimize_web:false};
-        await this.progress(job, ranges[i][0], `Reconstructing ${view.name.toUpperCase()} geometry`, `Running the 3D engine independently for the ${view.name} view.`);
-        const glb=await this.generateWithProvider(view.image,viewOut,viewPayload,this.mappedViewProgress(job,view.name.toUpperCase(),ranges[i][0],ranges[i][1]));
-        await validateGlb(glb);
-        generatedViews.push({name:view.name,file:glb,rotation_z:view.rotation_z});
-      }
-
-      let finalGlb=generatedViews[0].file;
-      if (generatedViews.length>1) {
-        await this.progress(job, 78, 'Fusing multi-view geometry', `Combining ${generatedViews.length} independent reconstructions into one coherent shell.`);
-        const fused=await fuseMultiViewGeometry({
-          views:generatedViews,
-          outputDir:path.join(jobDir,'fused'),
-          blenderPath:cfg.blender_path || '',
-          onLog:(line)=>this.log(`[Multi-View Geometry] ${line}`),
-          onChild:(child)=>{this.currentChild=child;}
-        });
-        finalGlb=fused.output;
-        await this.progress(job, 86, 'Multi-view geometry ready', `${fused.viewCount} views fused. Rear and side silhouettes now participate in the final geometry.`);
-      }
+      // IMPORTANT QUALITY RULE: Stable Fast 3D is a single-image reconstruction engine.
+      // Never create complete Front/Back/Side bodies and voxel-fuse them together.
+      // That duplicates invented geometry and can make a good front reconstruction dramatically worse.
+      // We preserve ONE coherent base mesh from the Front reference, then use Back/Left/Right only
+      // as additional texture evidence projected onto that same mesh.
+      const baseOut=path.join(jobDir,'view-front');
+      const basePayload={...payload,quality:'high',generate_textures:false,optimize_web:false};
+      await this.progress(job, 14, 'Reconstructing base geometry', 'Creating one clean high-quality geometry from the Front reference. Back and side references will not create duplicate bodies.');
+      let finalGlb=await this.generateWithProvider(
+        frontImage,
+        baseOut,
+        basePayload,
+        this.mappedViewProgress(job,'BASE GEOMETRY',14,72)
+      );
+      await validateGlb(finalGlb);
+      await this.progress(job, 78, 'Base geometry preserved', 'Single coherent Front reconstruction retained. Multi-view references will improve appearance without voxel-merging extra bodies.');
 
       if (viewImages.length > 1) {
-        await this.progress(job, 88, 'Multi-View Texture', 'Projecting Front / Back / Side references by orientation and preparing a 4096px color-safe bake.');
+        await this.progress(job, 82, 'Multi-View Texture', 'Projecting Front / Back / Side references onto the single base mesh and preparing a 4096px color-safe bake.');
         const textured=await bakeMultiViewTexture({
           model:finalGlb,
           views:viewImages.map(view=>({name:view.name,file:view.image})),
@@ -693,7 +683,7 @@ class NexaWorker {
           onChild:(child)=>{this.currentChild=child;}
         });
         finalGlb=textured.output;
-        await this.progress(job, 94, 'Texture bake completed', `${textured.viewCount} reference views baked into a ${textured.textureSize}px texture atlas${textured.fallbackFrom ? ' after an automatic memory-safe retry' : ''}.`);
+        await this.progress(job, 94, 'Texture bake completed', `${textured.viewCount} reference views baked onto one coherent mesh in a ${textured.textureSize}px texture atlas${textured.fallbackFrom ? ' after an automatic memory-safe retry' : ''}.`);
       }
 
       const validated = await validateGlb(finalGlb);

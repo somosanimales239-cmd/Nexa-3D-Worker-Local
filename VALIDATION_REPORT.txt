@@ -1,24 +1,20 @@
-Nexa 3D Worker Local 1.6.2 — Validation Report
+Nexa 3D Worker Local 1.6.3 — VALIDATION REPORT
 
-Scope
-- Runtime fix for the failure at Multi-View Texture 88%.
-- Incremental source overlay over Worker 1.6.1.
+Purpose: remove destructive multi-body geometry fusion while retaining multi-view texture projection.
 
-Verified locally
-- src/backend/multi-view-texture.js: node --check PASS.
-- src/backend/nexa-worker.js: node --check PASS.
-- Generated Blender Python script: Python compile PASS.
-- Full reconstructed Worker project: npm run validate PASS.
-- Delivery validator: PASS.
-- Project validator: PASS.
-- Node baseline tests: 3 passed / 0 failed.
-- ZIP integrity: checked after packaging.
+Static checks:
+- src/backend/nexa-worker.js Node syntax: PASS
+- package.json JSON parse: PASS
+- nexa.project.json JSON parse: PASS
+- Worker VERSION constant: 1.6.3
+- No fuseMultiViewGeometry import in nexaworker: PASS
+- No per-reference geometry generation loop in multi-view path: PASS
+- One Front/base geometry generation in multi-view path: PASS
+- Back/Left/Right retained as texture references: PASS
+- 4096px bake request retained: PASS
 
-Behavior changes
-- 4K multi-view texture transfer now uses an Emission color bake instead of DIFFUSE/pass_filter.
-- Blender script records explicit success/failure status and traceback details.
-- A true memory-allocation failure retries once at 2048px; other Blender errors are surfaced and are not silently downgraded.
-- Worker progress telemetry retries three times and does not fail local generation solely because a progress-status POST temporarily fails.
+Behavioral contract:
+Front -> one coherent geometry -> multi-view texture projection -> GLB.
+Back/Left/Right never become additional complete bodies and are never voxel-fused into the base mesh.
 
-Environment limitation
-- Blender 5.2 on the user's Windows machine is not executable inside this packaging environment, so the real 4K bake must be confirmed on that Worker. The generated Blender Python is syntactically valid and the complete Node validation suite passes.
+This package does not claim that Stable Fast 3D can reconstruct true rear geometry from a second image. Its purpose is to stop quality regression and use extra references only where the current engine can use them safely.
