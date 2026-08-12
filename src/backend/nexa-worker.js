@@ -6,8 +6,9 @@ const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 const { ApplyPackageStore } = require('./apply-package-store');
 const { quickTextureJob } = require('./quick-texture-processor');
+const { fuseMultiViewGeometry } = require('./multi-view-reconstruction');
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -435,6 +436,56 @@ class NexaWorker {
     } finally { clearTimeout(timer); }
   }
 
+
+  async downloadReference(job, reference, target) {
+    const cfg = this.config();
+    const url = String(reference?.download_url || '');
+    if (!url) throw new Error(`Reference ${reference?.group || 'image'} does not include a protected download URL.`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), cfg.http_timeout_seconds * 1000);
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${cfg.worker_token}`,
+          'X-Nexa-3D-Worker-Token': cfg.worker_token,
+          'X-Nexa-3D-Claim': job.claim_token,
+          'User-Agent': `Nexa-3D-Worker-Local/${VERSION}`
+        },
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`Reference download failed HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      await fsp.mkdir(path.dirname(target), { recursive: true });
+      await fsp.writeFile(target, bytes);
+      return bytes.length;
+    } finally { clearTimeout(timer); }
+  }
+
+  async prepareMultiViewInputs(job, inputDir) {
+    const refs = Array.isArray(job.reference_images) ? job.reference_images : [];
+    const byGroup = new Map();
+    for (const ref of refs) if (ref?.group && !byGroup.has(String(ref.group))) byGroup.set(String(ref.group), ref);
+    const result = [];
+    for (const group of ['back','left','right']) {
+      const ref = byGroup.get(group);
+      if (!ref) continue;
+      const ext = path.extname(String(ref.filename || '.png')).toLowerCase() || '.png';
+      const target = path.join(inputDir, `${group}${ext}`);
+      await this.progress(job, 13, `Downloading ${group} reference`, `Retrieving the protected ${group} view from Nexa.`);
+      await this.downloadReference(job, ref, target);
+      result.push({ name: group, image: target, reference: ref });
+    }
+    return result;
+  }
+
+  mappedViewProgress(job, label, start, end) {
+    return async (raw, stage, message) => {
+      const normalized = Math.max(0, Math.min(100, Number(raw) || 0)) / 100;
+      const progress = Math.round(start + (end - start) * normalized);
+      await this.progress(job, progress, `${label}: ${stage}`, message);
+    };
+  }
+
   async uploadResult(job, glbFile, sha256) {
     const cfg = this.config();
     const bytes = await fsp.readFile(glbFile);
@@ -569,22 +620,65 @@ class NexaWorker {
     const inputDir = path.join(jobDir, 'input'), outputDir = path.join(jobDir, 'output');
     await fsp.mkdir(inputDir, { recursive: true }); await fsp.mkdir(outputDir, { recursive: true });
     const ext = path.extname(job.input_filename || '.png').toLowerCase() || '.png';
-    const image = path.join(inputDir, `source${ext}`);
+    const frontImage = path.join(inputDir, `front${ext}`);
     try {
-      await this.progress(job, 5, 'Downloading source image', 'Retrieving the protected image from Nexa.');
-      const size = await this.downloadImage(job, image);
-      await this.progress(job, 12, 'Source image ready', `${size} bytes downloaded.`);
-      const glb = await this.generateWithProvider(image, outputDir, job.payload || {}, (v, s, m) => this.progress(job, v, s, m));
-      const validated = await validateGlb(glb);
-      await this.progress(job, 90, 'Validating generated GLB', `SHA-256 ${validated.sha256.slice(0, 12)}…`);
-      const result = await this.uploadResult(job, glb, validated.sha256);
+      await this.progress(job, 5, 'Downloading Front reference', 'Retrieving the protected Front image from Nexa.');
+      const size = await this.downloadImage(job, frontImage);
+      await this.progress(job, 10, 'Front reference ready', `${size} bytes downloaded.`);
+
+      const payload = job.payload || {};
+      const multiView = payload?.multi_view?.enabled === true || payload?.pipeline === 'quality_multiview';
+      if (!multiView) {
+        const glb = await this.generateWithProvider(frontImage, outputDir, payload, (v, s, m) => this.progress(job, v, s, m));
+        const validated = await validateGlb(glb);
+        await this.progress(job, 90, 'Validating generated GLB', `SHA-256 ${validated.sha256.slice(0, 12)}…`);
+        const result = await this.uploadResult(job, glb, validated.sha256);
+        this.processed += 1;
+        this.log(`Job ${job.uuid} completed. Nexa asset ${result.asset_id || ''}.`);
+        this.callbacks.onJob?.({ uuid: job.uuid, progress: 100, stage: 'Completed', result });
+        return;
+      }
+
+      const extraViews = await this.prepareMultiViewInputs(job, inputDir);
+      const viewImages = [{ name:'front', image:frontImage, rotation_z:0 }, ...extraViews.map(v => ({ ...v, rotation_z: v.name === 'back' ? 180 : v.name === 'left' ? -90 : 90 }))];
+      const generatedViews = [];
+      const ranges = viewImages.length === 2 ? [[14,42],[43,70]] : viewImages.length === 3 ? [[14,34],[35,55],[56,72]] : [[14,30],[31,47],[48,62],[63,75]];
+
+      for (let i=0;i<viewImages.length;i++) {
+        const view=viewImages[i];
+        const viewOut=path.join(jobDir,`view-${view.name}`);
+        const viewPayload={...payload,quality:'high',generate_textures:false,optimize_web:false};
+        await this.progress(job, ranges[i][0], `Reconstructing ${view.name.toUpperCase()} geometry`, `Running the 3D engine independently for the ${view.name} view.`);
+        const glb=await this.generateWithProvider(view.image,viewOut,viewPayload,this.mappedViewProgress(job,view.name.toUpperCase(),ranges[i][0],ranges[i][1]));
+        await validateGlb(glb);
+        generatedViews.push({name:view.name,file:glb,rotation_z:view.rotation_z});
+      }
+
+      let finalGlb=generatedViews[0].file;
+      if (generatedViews.length>1) {
+        await this.progress(job, 78, 'Fusing multi-view geometry', `Combining ${generatedViews.length} independent reconstructions into one coherent shell.`);
+        const fused=await fuseMultiViewGeometry({
+          views:generatedViews,
+          outputDir:path.join(jobDir,'fused'),
+          blenderPath:cfg.blender_path || '',
+          onLog:(line)=>this.log(`[Multi-View Geometry] ${line}`),
+          onChild:(child)=>{this.currentChild=child;}
+        });
+        finalGlb=fused.output;
+        await this.progress(job, 86, 'Multi-view geometry ready', `${fused.viewCount} views fused. Rear and side silhouettes now participate in the final geometry.`);
+      }
+
+      const validated = await validateGlb(finalGlb);
+      await this.progress(job, 90, 'Validating reconstructed GLB', `SHA-256 ${validated.sha256.slice(0, 12)}…`);
+      const result = await this.uploadResult(job, finalGlb, validated.sha256);
       this.processed += 1;
-      this.log(`Job ${job.uuid} completed. Nexa asset ${result.asset_id || ''}.`);
+      this.log(`Multi-view job ${job.uuid} completed. Nexa asset ${result.asset_id || ''}.`);
       this.callbacks.onJob?.({ uuid: job.uuid, progress: 100, stage: 'Completed', result });
     } catch (error) {
       this.log(`Job ${job.uuid} failed: ${error.message}`, 'error');
       await this.fail(job, error.message);
     } finally {
+      this.currentChild = null;
       if (!cfg.keep_temp) await fsp.rm(jobDir, { recursive: true, force: true });
       this.busy = false; this.currentJob = null; this.emitStatus();
     }

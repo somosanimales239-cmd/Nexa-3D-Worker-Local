@@ -1,20 +1,28 @@
-Nexa 3D Worker Local Update 1.4.0
-Guided Color Paint Processor
+# Nexa 3D Worker Local 1.5.0 — Multi-View Geometry Reconstruction
 
-INSTALL
-1. Keep your existing Blender installation and Blender Path. Do not reinstall Blender.
-2. Replace the included files in the existing Nexa 3D Worker Local source project.
-3. Rebuild / reinstall the Worker using the same process used for the current Worker version.
-4. Keep the existing Nexa Connection token and settings.
+Install after Web 2.1.0.
 
-WHAT CHANGED
-- Adds guided Quick Texture paint modes received from Web 2.0.0.
-- Solid mode: paints the entire model with the selected primary color.
-- Multiple existing parts: cycles primary / secondary / accent colors through material slots that already exist in the GLB.
-- Original image mode: uses the original source image when available.
-- Original image + tint: combines source-image detail with the selected primary color.
-- Supports Matte / Satin / Glossy / Metallic surface parameters.
-- Preserves the original model because Nexa saves the returned GLB as a separate model version.
+## Replace / add
+- `src/backend/nexa-worker.js`
+- `src/backend/multi-view-reconstruction.js` (new)
+- `package.json`
 
-LIMITATION
-The worker does not yet have AI semantic segmentation. If a dog is one mesh with one material, "multiple colors" cannot automatically understand ears vs paws vs nose. Solid color works on the whole object. Semantic part painting can be added as the next layer later.
+## What it does
+For `quality_multiview` jobs, the Worker no longer treats Back / Left / Right as passive reference files.
+
+It now:
+1. downloads Front, Back and available Side references automatically;
+2. runs the existing 3D engine independently for each supplied view at High quality;
+3. rotates the view reconstructions into their expected orientation;
+4. uses the already configured local Blender executable to normalize and fuse the view geometry;
+5. performs a quality-first voxel remesh and conservative decimation;
+6. returns one coherent GLB shell.
+
+This specifically makes the rear silhouette participate in geometry instead of being inferred only from Front.
+
+## Requirements
+- Existing Stable Fast 3D / selected provider remains installed exactly as it is now.
+- Blender path remains the one already configured in Engine Setup.
+- No new AI model download is introduced.
+
+The final texture stage is added by Worker 1.6.0. Install 1.6.0 immediately after this update.

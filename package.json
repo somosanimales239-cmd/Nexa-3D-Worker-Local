@@ -1,14 +1,14 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.4.0",
-  "description": "Local Windows worker for Nexa 3D Studio image-to-3D, Apply Packages and automatic Quick Texture",
+  "version": "1.5.0",
+  "description": "Local Windows worker for Nexa 3D Studio image-to-3D, Apply Packages and automatic Quick Texture and quality multi-view reconstruction",
   "main": "main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && node --check src/backend/config-store.js && node --check src/backend/system-probe.js && node --check src/backend/engine-manager.js && node --check src/backend/nexa-worker.js && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && node --check src/backend/config-store.js && node --check src/backend/system-probe.js && node --check src/backend/engine-manager.js && node --check src/backend/nexa-worker.js && node --check src/backend/multi-view-reconstruction.js && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "validate:delivery": "node scripts/validate-delivery.js",
     "validate:project": "node scripts/validate-project.js",

@@ -1,3 +1,3 @@
-src/backend/quick-texture-processor.js
 src/backend/nexa-worker.js
+src/backend/multi-view-reconstruction.js
 package.json
