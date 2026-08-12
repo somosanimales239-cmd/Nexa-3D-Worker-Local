@@ -7,8 +7,9 @@ const { spawn, spawnSync } = require('child_process');
 const { ApplyPackageStore } = require('./apply-package-store');
 const { quickTextureJob } = require('./quick-texture-processor');
 const { fuseMultiViewGeometry } = require('./multi-view-reconstruction');
+const { bakeMultiViewTexture } = require('./multi-view-texture');
 
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -668,8 +669,23 @@ class NexaWorker {
         await this.progress(job, 86, 'Multi-view geometry ready', `${fused.viewCount} views fused. Rear and side silhouettes now participate in the final geometry.`);
       }
 
+      if (viewImages.length > 1) {
+        await this.progress(job, 88, 'Multi-View Texture', 'Projecting Front / Back / Side references by orientation and baking one high-resolution texture atlas.');
+        const textured=await bakeMultiViewTexture({
+          model:finalGlb,
+          views:viewImages.map(view=>({name:view.name,file:view.image})),
+          outputDir:path.join(jobDir,'textured'),
+          blenderPath:cfg.blender_path || '',
+          textureSize:4096,
+          onLog:(line)=>this.log(`[Multi-View Texture] ${line}`),
+          onChild:(child)=>{this.currentChild=child;}
+        });
+        finalGlb=textured.output;
+        await this.progress(job, 94, 'Texture bake completed', `${textured.viewCount} reference views baked into a ${textured.textureSize}px texture atlas.`);
+      }
+
       const validated = await validateGlb(finalGlb);
-      await this.progress(job, 90, 'Validating reconstructed GLB', `SHA-256 ${validated.sha256.slice(0, 12)}…`);
+      await this.progress(job, 97, 'Validating final GLB', `SHA-256 ${validated.sha256.slice(0, 12)}…`);
       const result = await this.uploadResult(job, finalGlb, validated.sha256);
       this.processed += 1;
       this.log(`Multi-view job ${job.uuid} completed. Nexa asset ${result.asset_id || ''}.`);

@@ -1,28 +1,24 @@
-# Nexa 3D Worker Local 1.5.0 — Multi-View Geometry Reconstruction
+# Nexa 3D Worker Local 1.6.0 — Orientation Multi-View Texture Bake
 
-Install after Web 2.1.0.
+Install third, after Worker 1.5.0. This package is cumulative for the multi-view Worker stage.
 
 ## Replace / add
 - `src/backend/nexa-worker.js`
-- `src/backend/multi-view-reconstruction.js` (new)
+- `src/backend/multi-view-reconstruction.js`
+- `src/backend/multi-view-texture.js` (new)
 - `package.json`
 
-## What it does
-For `quality_multiview` jobs, the Worker no longer treats Back / Left / Right as passive reference files.
+## What it does automatically after geometry reconstruction
+- Front is projected toward the front-facing surfaces.
+- Back is projected toward the rear-facing surfaces.
+- Left / Right, when supplied, are projected toward the matching side surfaces.
+- Transparent reference backgrounds use a neutral fallback instead of painting empty space black.
+- Blender generates a new quality UV atlas.
+- The orientation-aware projection material is baked to one 4096 x 4096 texture atlas.
+- The temporary projection graph is replaced with a normal baked PBR material.
+- The final result is exported as one GLB and uploaded back to Nexa automatically.
 
-It now:
-1. downloads Front, Back and available Side references automatically;
-2. runs the existing 3D engine independently for each supplied view at High quality;
-3. rotates the view reconstructions into their expected orientation;
-4. uses the already configured local Blender executable to normalize and fuse the view geometry;
-5. performs a quality-first voxel remesh and conservative decimation;
-6. returns one coherent GLB shell.
+There is no separate Quick Texture action required for this multi-view generation workflow.
 
-This specifically makes the rear silhouette participate in geometry instead of being inferred only from Front.
-
-## Requirements
-- Existing Stable Fast 3D / selected provider remains installed exactly as it is now.
-- Blender path remains the one already configured in Engine Setup.
-- No new AI model download is introduced.
-
-The final texture stage is added by Worker 1.6.0. Install 1.6.0 immediately after this update.
+## Important accuracy note
+This update uses the current working 3D engine + Blender. It materially uses the Back/Side views instead of ignoring them, but it does not add a separate large generative texture model. Areas not visible in any supplied reference are blended from the nearest available views rather than semantically invented by a Meshy-class texturing model.

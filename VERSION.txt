@@ -1,1 +1,1 @@
-Nexa 3D Worker Local 1.5.0 — Multi-View Geometry Reconstruction
+Nexa 3D Worker Local 1.6.0 — Orientation Multi-View Texture Bake

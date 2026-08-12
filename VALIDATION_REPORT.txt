@@ -1,8 +1,7 @@
 Node syntax: PASS
 - src/backend/nexa-worker.js
 - src/backend/multi-view-reconstruction.js
+- src/backend/multi-view-texture.js
 
-Existing Image -> 3D single-view branch preserved.
-Existing Quick Texture branch preserved.
-Existing Apply Package branch preserved.
-No GitHub/OpenAI/database changes.
+Final multi-view pipeline:
+Front/Back/Side download -> independent reconstruction -> geometry fuse -> orientation projection -> 4K bake -> GLB validation -> automatic upload.
