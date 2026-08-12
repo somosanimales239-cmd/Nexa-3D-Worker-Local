@@ -5,6 +5,6 @@
     "type": "electron-desktop",
     "platform": "windows-x64",
     "description": "Local image-to-3D and Quick Texture worker for Nexa 3D Studio. No OpenAI.",
-    "workspace_revision": "1.0.17",
-    "updated_at": "2026-08-11 22:42:37"
+    "workspace_revision": "1.0.18",
+    "updated_at": "2026-08-11 22:47:21"
 }
