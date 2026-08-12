@@ -9,7 +9,7 @@ const { quickTextureJob } = require('./quick-texture-processor');
 const { fuseMultiViewGeometry } = require('./multi-view-reconstruction');
 const { bakeMultiViewTexture } = require('./multi-view-texture');
 
-const VERSION = '1.6.1';
+const VERSION = '1.6.2';
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safeName(value) {
@@ -408,11 +408,23 @@ class NexaWorker {
   }
 
   async progress(job, progress, stage, message = '') {
-    await this.requestJson('worker-progress.php', {
-      job_uuid: job.uuid, claim_token: job.claim_token, progress, stage, message,
-      worker_id: this.config().worker_id, version: VERSION
-    });
+    let lastError = null;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        await this.requestJson('worker-progress.php', {
+          job_uuid: job.uuid, claim_token: job.claim_token, progress, stage, message,
+          worker_id: this.config().worker_id, version: VERSION
+        });
+        lastError = null;
+        break;
+      } catch (error) {
+        lastError = error;
+        if (attempt < 3) await sleep(700 * attempt);
+      }
+    }
+    if (lastError) this.log(`Progress telemetry warning at ${progress}% (${stage}): ${lastError.message}. Local generation will continue.`, 'warn');
     this.callbacks.onJob?.({ uuid: job.uuid, progress, stage, message, asset_name: job.asset_name });
+    return lastError === null;
   }
 
   async fail(job, error, stage = 'Generation failed') {
@@ -670,7 +682,7 @@ class NexaWorker {
       }
 
       if (viewImages.length > 1) {
-        await this.progress(job, 88, 'Multi-View Texture', 'Projecting Front / Back / Side references by orientation and baking one high-resolution texture atlas.');
+        await this.progress(job, 88, 'Multi-View Texture', 'Projecting Front / Back / Side references by orientation and preparing a 4096px color-safe bake.');
         const textured=await bakeMultiViewTexture({
           model:finalGlb,
           views:viewImages.map(view=>({name:view.name,file:view.image})),
@@ -681,7 +693,7 @@ class NexaWorker {
           onChild:(child)=>{this.currentChild=child;}
         });
         finalGlb=textured.output;
-        await this.progress(job, 94, 'Texture bake completed', `${textured.viewCount} reference views baked into a ${textured.textureSize}px texture atlas.`);
+        await this.progress(job, 94, 'Texture bake completed', `${textured.viewCount} reference views baked into a ${textured.textureSize}px texture atlas${textured.fallbackFrom ? ' after an automatic memory-safe retry' : ''}.`);
       }
 
       const validated = await validateGlb(finalGlb);

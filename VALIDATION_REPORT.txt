@@ -1,9 +1,24 @@
-PASS — node --check src/app.js
-PASS — node --check src/backend/apply-package-store.js
-PASS — node --check src/backend/nexa-worker.js
-PASS — node --check src/backend/quick-texture-bridge.js
-PASS — Nexa legacy delimiter scanner reports zero delimiter issues for all four reported files
-PASS — npm run validate:delivery
-PASS — npm run validate:project
-PASS — npm test (3/3)
-PASS — npm run validate
+Nexa 3D Worker Local 1.6.2 — Validation Report
+
+Scope
+- Runtime fix for the failure at Multi-View Texture 88%.
+- Incremental source overlay over Worker 1.6.1.
+
+Verified locally
+- src/backend/multi-view-texture.js: node --check PASS.
+- src/backend/nexa-worker.js: node --check PASS.
+- Generated Blender Python script: Python compile PASS.
+- Full reconstructed Worker project: npm run validate PASS.
+- Delivery validator: PASS.
+- Project validator: PASS.
+- Node baseline tests: 3 passed / 0 failed.
+- ZIP integrity: checked after packaging.
+
+Behavior changes
+- 4K multi-view texture transfer now uses an Emission color bake instead of DIFFUSE/pass_filter.
+- Blender script records explicit success/failure status and traceback details.
+- A true memory-allocation failure retries once at 2048px; other Blender errors are surfaced and are not silently downgraded.
+- Worker progress telemetry retries three times and does not fail local generation solely because a progress-status POST temporarily fails.
+
+Environment limitation
+- Blender 5.2 on the user's Windows machine is not executable inside this packaging environment, so the real 4K bake must be confirmed on that Worker. The generated Blender Python is syntactically valid and the complete Node validation suite passes.

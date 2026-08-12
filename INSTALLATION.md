@@ -1,27 +1,21 @@
-# Nexa 3D Worker Local v1.6.1 — Final Pre-GitHub Source Validation Fix
+# Nexa 3D Worker Local 1.6.2 — Multi-View Texture 88% Bake Fix
 
-This is a source-only correction before the GitHub build.
+This is an incremental Worker source update. It does not change the Nexa 3D Studio web page, Stable Fast 3D installation, Hugging Face cache, Blender installation, or user settings.
 
-## Replace these files in the existing Nexa 3D Worker Local project
-- `src/app.js`
-- `src/backend/apply-package-store.js`
-- `src/backend/nexa-worker.js`
-- `src/backend/quick-texture-bridge.js`
-- `package.json`
-- `nexa.project.json`
+## Apply
+1. In Nexa App Builder Pro open Manual Delivery for the existing **Nexa 3D Worker Local** project.
+2. Create a new Manual Delivery and upload this ZIP.
+3. Apply staged files once.
+4. Confirm Local build validation is Ready.
+5. Push to GitHub & Build. If Nexa reports an externally uncertain dispatch after the push, use the already-installed GitHub dispatch reconciliation action rather than creating another source revision.
+6. Download/install the resulting **1.6.2** Windows Worker build.
+7. Re-queue the same Front + Back test.
 
-## What was fixed
-- Rewrote the Apply Packages renderer so Nexa's local delimiter scanner no longer mistakes nested JavaScript template literals for broken braces.
-- Restored clean validated copies of the three backend files reported by Local build validation.
-- Increased application version to `1.6.1` consistently in `package.json` and `nexa.project.json`.
-- Strengthened `npm run validate` so it explicitly runs `node --check` on Apply Package, Quick Texture and Multi-View source files before GitHub packaging.
+## What is fixed
+- Replaces the fragile diffuse/pass-filter texture bake with a color-only **Emission bake** in Cycles CPU mode.
+- Keeps 4096x4096 as the first texture bake resolution.
+- Falls back to 2048 only if Blender reports an actual memory-allocation failure.
+- Captures Blender Python tracebacks into the Worker error instead of returning only “GLB was not created”.
+- Makes normal progress telemetry retry up to three times and no longer aborts a successful local SF3D operation because a non-critical progress POST had one transient `fetch failed` error.
 
-## Install
-1. Open the existing Nexa 3D Worker Local project in Manual Delivery.
-2. Upload this ZIP.
-3. Stage and apply the files.
-4. Return to Local build validation.
-5. Do not run Normalize Installer/Portable/ZIP unless a delivery configuration error is separately reported.
-6. When Local build validation is Ready, use Push to GitHub & Build.
-
-No Blender, Stable Fast 3D, Hugging Face cache, worker token or local settings are changed by this update.
+No Blender reinstall is required.
