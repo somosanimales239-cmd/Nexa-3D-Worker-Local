@@ -1,14 +1,14 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.7.1",
-  "description": "Nexa 3D Worker Local 1.7.1 with 8GB VRAM-safe SF3D base generation, corrected multi-view refine and professional polish.",
-  "main": "main.js",
+  "version": "1.8.0",
+  "description": "Nexa 3D Worker Local 1.8.0 with native Hunyuan3D-2mv geometry, Hunyuan Paint multi-view texture, Face Priority reference enhancement and conservative texture polish.",
+  "main": "hunyuan-main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && node --check src/backend/config-store.js && node --check src/backend/system-probe.js && node --check src/backend/engine-manager.js && node --check src/backend/apply-package-store.js && node --check src/backend/quick-texture-bridge.js && node --check src/backend/quick-texture-processor.js && node --check src/backend/nexa-worker.js && node --check src/backend/multi-view-reconstruction.js && node --check src/backend/multi-view-texture.js && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check hunyuan-main.js && node --check hunyuan-preload.js && node --check main.js && node --check preload.js && node --check src/app.js && node --check src/backend/config-store.js && node --check src/backend/system-probe.js && node --check src/backend/engine-manager.js && node --check src/backend/apply-package-store.js && node --check src/backend/quick-texture-bridge.js && node --check src/backend/quick-texture-processor.js && node --check src/backend/nexa-worker.js && node --check src/backend/hunyuan-config-store.js && node --check src/backend/hunyuan-engine-manager.js && node --check src/backend/hunyuan-multiview-runner.js && node --check src/backend/hunyuan-nexa-worker.js && node --check src/backend/multi-view-reconstruction.js && node --check src/backend/multi-view-texture.js && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "validate:delivery": "node scripts/validate-delivery.js",
     "validate:project": "node scripts/validate-project.js",
@@ -28,9 +28,15 @@
     "files": [
       "main.js",
       "preload.js",
+      "hunyuan-main.js",
+      "hunyuan-preload.js",
       "src/**/*",
+      "scripts/**/*",
       "package.json",
       "README.md"
+    ],
+    "asarUnpack": [
+      "scripts/hunyuan_multiview_worker.py"
     ],
     "win": {
       "target": [

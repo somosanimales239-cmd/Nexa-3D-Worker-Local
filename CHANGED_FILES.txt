@@ -1,3 +1,10 @@
-src/backend/nexa-worker.js
 package.json
+VERSION.txt
 nexa.project.json
+hunyuan-main.js
+hunyuan-preload.js
+src/backend/hunyuan-config-store.js
+src/backend/hunyuan-engine-manager.js
+src/backend/hunyuan-multiview-runner.js
+src/backend/hunyuan-nexa-worker.js
+scripts/hunyuan_multiview_worker.py

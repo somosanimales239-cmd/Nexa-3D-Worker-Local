@@ -1,10 +1,10 @@
 {
     "name": "Nexa 3D Worker Local",
-    "version": "1.7.1",
-    "application_version": "1.7.1",
+    "version": "1.8.0",
+    "application_version": "1.8.0",
     "type": "electron-desktop",
     "platform": "windows-x64",
-    "description": "8GB-VRAM-safe professional refine worker: one base mesh, 1024px temporary SF3D bake, corrected multi-view texture and final professional polish.",
-    "workspace_revision": "1.0.25",
-    "updated_at": "2026-08-13 14:24:13"
+    "description": "Native Hunyuan3D-2mv multi-view reconstruction with Hunyuan Paint, Face Priority reference enhancement, conservative texture polish, plus the existing SF3D and Quick Texture paths.",
+    "workspace_revision": "1.0.26",
+    "updated_at": "2026-08-13 18:22:04"
 }
