@@ -5,6 +5,6 @@
     "type": "electron-desktop",
     "platform": "windows-x64",
     "description": "8GB-VRAM-safe professional refine worker: one base mesh, 1024px temporary SF3D bake, corrected multi-view texture and final professional polish.",
-    "workspace_revision": "1.0.24",
-    "updated_at": "2026-08-12 16:44:54"
+    "workspace_revision": "1.0.25",
+    "updated_at": "2026-08-13 14:24:13"
 }
