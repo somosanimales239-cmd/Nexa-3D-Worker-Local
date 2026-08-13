@@ -1,7 +1,7 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.8.0",
-  "description": "Nexa 3D Worker Local 1.8.0 with native Hunyuan3D-2mv geometry, Hunyuan Paint multi-view texture, Face Priority reference enhancement and conservative texture polish.",
+  "version": "1.8.1",
+  "description": "Nexa 3D Worker Local 1.8.1: proven Hunyuan3D-2mv + Hunyuan Paint multi-view baseline, with optional Face Priority and Texture Polish.",
   "main": "hunyuan-main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",

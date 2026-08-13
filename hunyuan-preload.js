@@ -22,7 +22,7 @@ function ensureHunyuanUi() {
     legacyCard.parentNode.insertBefore(card, legacyCard);
   }
   const version = document.querySelector('.version');
-  if (version) version.textContent = 'v1.8.0 · Hunyuan Multi-View Paint · No OpenAI';
+  if (version) version.textContent = 'v1.8.1 · Hunyuan Multi-View Paint · No OpenAI';
 }
 
 function showProvider(config) {

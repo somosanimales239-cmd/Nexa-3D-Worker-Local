@@ -31,7 +31,7 @@ async function runHunyuanMultiview({ cfg, views, outputDir, payload = {}, progre
     const file = byName.get(name);
     if (file && fileExists(file)) args.push(`--${name}`, file);
   }
-  const profile = ['vram_safe', 'balanced', 'high'].includes(String(payload.quality_profile || '')) ? String(payload.quality_profile) : 'high';
+  const profile = ['vram_safe', 'balanced', 'high'].includes(String(payload.quality_profile || '')) ? String(payload.quality_profile) : 'balanced';
   args.push('--quality-profile', profile);
   if (payload?.generate_textures === false) args.push('--shape-only');
   if (payload?.face_polish?.enabled === true) args.push('--face-polish');

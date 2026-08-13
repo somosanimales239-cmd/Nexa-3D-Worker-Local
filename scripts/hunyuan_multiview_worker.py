@@ -115,7 +115,7 @@ def main():
     ap.add_argument('--back', default='')
     ap.add_argument('--left', default='')
     ap.add_argument('--right', default='')
-    ap.add_argument('--quality-profile', choices=['vram_safe', 'balanced', 'high'], default='high')
+    ap.add_argument('--quality-profile', choices=['vram_safe', 'balanced', 'high'], default='balanced')
     ap.add_argument('--face-polish', action='store_true')
     ap.add_argument('--texture-polish', action='store_true')
     ap.add_argument('--shape-only', action='store_true')

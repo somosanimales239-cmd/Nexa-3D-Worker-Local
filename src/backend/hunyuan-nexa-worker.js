@@ -18,7 +18,7 @@ async function validateGlb(file) {
 class HunyuanNexaWorker extends NexaWorker {
   async heartbeat() {
     const cfg = this.config();
-    const data = await this.requestJson('worker-heartbeat.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.0' });
+    const data = await this.requestJson('worker-heartbeat.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.1' });
     this.lastHeartbeat = new Date().toISOString();
     this.emitStatus();
     return data;
@@ -26,7 +26,7 @@ class HunyuanNexaWorker extends NexaWorker {
 
   async claim() {
     const cfg = this.config();
-    const data = await this.requestJson('worker-next.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.0' });
+    const data = await this.requestJson('worker-next.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.1' });
     return data.job || null;
   }
 

@@ -1,12 +1,26 @@
-NEXA 3D WORKER LOCAL 1.8.0 UPDATE
+NEXA 3D WORKER LOCAL 1.8.1 — VERIFIED BASELINE UPDATE
 
-Upload this ZIP as the source update for the existing Nexa-3D-Worker-Local project in Nexa App Builder.
-It is rooted at the project root: package.json, VERSION.txt, new top-level Hunyuan entry/preload files, new backend modules, and the Python bridge.
+This ZIP is an overlay for the existing Nexa-3D-Worker-Local 1.7.1 project.
+Use Nexa App Builder Pro -> Manual Delivery -> Stage ZIP -> Apply staged files -> Build.
 
-The update preserves the existing 1.7.1 main.js, preload.js, SF3D, Blender Quick Texture and legacy Hunyuan API files. package.json switches the active Electron entry point to hunyuan-main.js.
+Why it overlays safely:
+- Nexa Manual Delivery stages only the files inside this ZIP.
+- Existing 1.7.1 files not listed here remain in the project.
+- package.json switches Electron's active entry point to hunyuan-main.js.
+- Existing SF3D, Blender Quick Texture and legacy Hunyuan API code remains available.
 
-Local Hunyuan defaults:
+Default Hunyuan path intentionally matches the local generation flow already proven on this PC:
+Front + Left + Back + Right -> Hunyuan3D-2mv -> Hunyuan Paint -> final.glb
+
+Conservative defaults:
+- Balanced quality: 50 steps, octree 256.
+- Face Priority Polish: only runs when the website explicitly enables it.
+- Texture Polish: only runs when the website explicitly enables it.
+
+Local Hunyuan installation reused as-is:
 D:\N3D\hunyuan2mv
 D:\N3D\hunyuan2mv\.venv\Scripts\python.exe
 D:\N3D\HunyuanCache
 D:\N3D\temp
+
+No Hunyuan, CUDA, PyTorch, Git or Node reinstall is performed by this update.
