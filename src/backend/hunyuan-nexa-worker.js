@@ -16,9 +16,35 @@ async function validateGlb(file) {
 }
 
 class HunyuanNexaWorker extends NexaWorker {
+  async start() {
+    if (this.running) return { ok: true, message: 'Worker is already running.', status: this.status() };
+
+    if (typeof this.store.ensureExact8082Provider === 'function') this.store.ensureExact8082Provider();
+    const cfg = this.store.get();
+
+    if (cfg.provider === 'hunyuan3d_multiview_local') {
+      const root = path.resolve(String(cfg.hunyuan3d_local_root || ''));
+      const python = path.resolve(String(cfg.hunyuan3d_local_python || ''));
+      if (!fs.existsSync(path.join(root, 'gradio_app.py'))) {
+        throw new Error(`Cannot start Hunyuan Worker: gradio_app.py was not found in ${root}`);
+      }
+      if (!fs.existsSync(python)) {
+        throw new Error(`Cannot start Hunyuan Worker: Python was not found at ${python}`);
+      }
+
+      try {
+        await this.heartbeat();
+      } catch (error) {
+        this.log(`Worker start preflight failed: ${error.message}`, 'error');
+        throw new Error(`Worker could not connect to Nexa: ${error.message}`);
+      }
+    }
+
+    return super.start();
+  }
   async heartbeat() {
     const cfg = this.config();
-    const data = await this.requestJson('worker-heartbeat.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.2' });
+    const data = await this.requestJson('worker-heartbeat.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.3' });
     this.lastHeartbeat = new Date().toISOString();
     this.emitStatus();
     return data;
@@ -26,7 +52,7 @@ class HunyuanNexaWorker extends NexaWorker {
 
   async claim() {
     const cfg = this.config();
-    const data = await this.requestJson('worker-next.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.2' });
+    const data = await this.requestJson('worker-next.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.3' });
     return data.job || null;
   }
 

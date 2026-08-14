@@ -1,7 +1,7 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.8.2",
-  "description": "Nexa 3D Worker Local 1.8.2: exact Hunyuan3D-2mv 8082 shape preset (30 steps, CFG 5.0, octree 256, chunks 8000, background removal, randomized seed) plus the proven Front/Left/Back/Right Hunyuan Paint Turbo pass.",
+  "version": "1.8.3",
+  "description": "Nexa 3D Worker Local 1.8.3: startup/provider queue synchronization fix on top of the unchanged 1.8.2 exact-8082 Hunyuan generation pipeline.",
   "main": "hunyuan-main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",

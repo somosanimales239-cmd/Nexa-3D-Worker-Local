@@ -1,35 +1,16 @@
-NEXA 3D WORKER LOCAL 1.8.2 — 8082 EXACT PARITY CORRECTION
+NEXA 3D WORKER LOCAL 1.8.3 — STARTUP / QUEUE SYNC REPAIR
 
-This is an incremental overlay for the current 1.8.1 project.
+Confirmed problem in 1.8.2:
+The website queues exact-8082 jobs under provider hunyuan3d_multiview_local, but an existing Worker installation could keep provider=stable_fast_3d in its persisted config. The Worker would then poll the stable queue while the Hunyuan job remained at 0%.
 
-ROOT CAUSE FIXED
-The 1.8.1 worker used different shape-generation values from the working local Gradio page:
-- 1.8.1 used 50 steps instead of 30
-- 1.8.1 used CFG 7.5 instead of 5.0
-- 1.8.1 used 50,000 chunks instead of 8,000
-- 1.8.1 fixed seed 12345 instead of Randomize Seed ON
-- 1.8.1 skipped background removal for RGBA inputs, while the 8082 UI had Remove Background ON
-- 1.8.1 painted the rembg images and kept the in-memory mesh
+Additional confirmed config bug:
+Hunyuan local root/python/cache/temp were added by the Hunyuan subclass, but the legacy ConfigStore save allow-list did not persist those new fields.
 
-1.8.2 intentionally mirrors the working path:
-SHAPE
-Front/Back/Left/Right -> RGBA -> forced BackgroundRemover -> Hunyuan3D-2mv
-30 steps | CFG 5.0 | octree 256 | chunks 8000 | randomized seed
-No simplification / no face reduction
+1.8.3 fixes only startup/connection/provider synchronization:
+- one-time migration to hunyuan3d_multiview_local
+- Hunyuan provider remains persistent after Save
+- Hunyuan local paths remain persistent
+- Start Worker performs a real Nexa heartbeat before reporting success
+- missing Hunyuan root/Python produces an immediate visible error
 
-PAINT
-Export white_mesh.glb -> release Shape -> reload GLB with trimesh -> Hunyuan Paint Turbo
-Original RGBA references in exact order:
-Front -> Left -> Back -> Right
-
-NO Face Priority polish.
-NO Texture sharpen.
-NO Stable Fast 3D.
-NO Blender Texture Engine.
-NO reinstall of Hunyuan/CUDA/PyTorch.
-
-Local installation reused:
-D:\N3D\hunyuan2mv
-D:\N3D\hunyuan2mv\.venv\Scripts\python.exe
-D:\N3D\HunyuanCache
-D:\N3D\temp
+IMPORTANT: scripts/hunyuan_multiview_worker.py is NOT changed by this repair. The 1.8.2 exact 8082 generation settings remain untouched.
