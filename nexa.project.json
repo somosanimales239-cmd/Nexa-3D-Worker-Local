@@ -1,10 +1,10 @@
 {
     "name": "Nexa 3D Worker Local",
-    "version": "1.8.1",
-    "application_version": "1.8.1",
+    "version": "1.8.2",
+    "application_version": "1.8.2",
     "type": "electron-desktop",
     "platform": "windows-x64",
-    "description": "Proven Hunyuan3D-2mv multi-view geometry + Hunyuan Paint baseline; Face Priority and Texture Polish remain optional.",
-    "workspace_revision": "1.0.27",
-    "updated_at": "2026-08-13 19:01:53"
+    "description": "8082 parity correction: exact Gradio Hunyuan3D-2mv shape settings and the already-proven four-reference Hunyuan Paint Turbo flow.",
+    "workspace_revision": "1.0.28",
+    "updated_at": "2026-08-13 21:23:57"
 }

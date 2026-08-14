@@ -6,7 +6,7 @@ function ensureHunyuanUi() {
   if (provider && !provider.querySelector('option[value="hunyuan3d_multiview_local"]')) {
     const option = document.createElement('option');
     option.value = 'hunyuan3d_multiview_local';
-    option.textContent = 'Hunyuan3D Multi-View Local — Recommended';
+    option.textContent = 'Hunyuan3D 2mv — Exact 8082 Local';
     provider.insertBefore(option, provider.firstChild);
   }
   const legacyStatus = document.getElementById('hunyuanStatus');
@@ -15,14 +15,14 @@ function ensureHunyuanUi() {
     const card = document.createElement('article');
     card.className = 'card engine-card';
     card.innerHTML = `
-      <div class="engine-title"><div class="engine-logo alt">MV</div><div><span class="pill good">RECOMMENDED</span><h3>Hunyuan3D Multi-View Local</h3>
-      <p>Front / Back / Left / Right → Hunyuan3D-2mv → Hunyuan Paint → final GLB. Uses the existing local installation; Gradio 8082 does not need to be open.</p></div></div>
+      <div class="engine-title"><div class="engine-logo alt">MV</div><div><span class="pill good">RECOMMENDED</span><h3>Hunyuan3D 2mv — Exact 8082 Local</h3>
+      <p>Uses the same 8082 shape preset: Remove Background ON, Randomize Seed ON, 30 steps, CFG 5.0, octree 256, chunks 8000. Then reloads the raw GLB and runs the proven original-RGBA Front → Left → Back → Right Hunyuan Paint Turbo pass. Gradio does not need to be open.</p></div></div>
       <div class="engine-status" id="hunyuanLocalStatus">Checking…</div>
       <div class="license-note"><b>Local paths</b><br>D:\\N3D\\hunyuan2mv<br>D:\\N3D\\hunyuan2mv\\.venv\\Scripts\\python.exe<br>D:\\N3D\\HunyuanCache<br>D:\\N3D\\temp</div>`;
     legacyCard.parentNode.insertBefore(card, legacyCard);
   }
   const version = document.querySelector('.version');
-  if (version) version.textContent = 'v1.8.1 · Hunyuan Multi-View Paint · No OpenAI';
+  if (version) version.textContent = 'v1.8.2 · Exact 8082 Parity · No Blender Paint';
 }
 
 function showProvider(config) {

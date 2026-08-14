@@ -18,7 +18,7 @@ async function validateGlb(file) {
 class HunyuanNexaWorker extends NexaWorker {
   async heartbeat() {
     const cfg = this.config();
-    const data = await this.requestJson('worker-heartbeat.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.1' });
+    const data = await this.requestJson('worker-heartbeat.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.2' });
     this.lastHeartbeat = new Date().toISOString();
     this.emitStatus();
     return data;
@@ -26,7 +26,7 @@ class HunyuanNexaWorker extends NexaWorker {
 
   async claim() {
     const cfg = this.config();
-    const data = await this.requestJson('worker-next.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.1' });
+    const data = await this.requestJson('worker-next.php', { worker_id: cfg.worker_id, provider: cfg.provider, version: '1.8.2' });
     return data.job || null;
   }
 
@@ -68,7 +68,7 @@ class HunyuanNexaWorker extends NexaWorker {
       const extraViews = await this.prepareMultiViewInputs(job, inputDir);
       const views = [{ name: 'front', file: frontImage }, ...extraViews.map(v => ({ name: v.name, file: v.image }))];
       const payload = job.payload || {};
-      await this.progress(job, 14, 'Native Hunyuan multi-view', `${views.length} reference view${views.length === 1 ? '' : 's'} ready. Blender reconstruction/texture fusion is bypassed for this provider.`);
+      await this.progress(job, 14, 'Exact 8082 Hunyuan multi-view', `${views.length} reference view${views.length === 1 ? '' : 's'} ready. Using the exact 8082 shape preset and proven Hunyuan Paint path; Blender is bypassed.`);
 
       const finalGlb = await runHunyuanMultiview({
         cfg,
