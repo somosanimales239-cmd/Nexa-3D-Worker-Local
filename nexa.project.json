@@ -1,10 +1,10 @@
 {
     "name": "Nexa 3D Worker Local",
-    "version": "1.9.1",
-    "application_version": "1.9.1",
+    "version": "1.9.2",
+    "application_version": "1.9.2",
     "type": "electron-desktop",
     "platform": "windows-x64",
-    "description": "Known-good Hunyuan automation: persistent Shape-only 8082 using Hunyuan3D-2mv, then exact proven low-VRAM Hunyuan Paint Turbo using original RGBA Front/Left/Back/Right.",
-    "workspace_revision": "1.0.31",
-    "updated_at": "2026-08-14 00:47:51"
+    "description": "Windows CP1252/UTF-8 logging repair. The exact 1.9.1 Hunyuan Shape + proven Paint pipeline is unchanged; only Python child-process encoding/logging is hardened.",
+    "workspace_revision": "1.0.32",
+    "updated_at": "2026-08-14 01:23:34"
 }

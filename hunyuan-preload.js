@@ -22,7 +22,7 @@ function ensureHunyuanUi() {
     legacyCard.parentNode.insertBefore(card, legacyCard);
   }
   const version = document.querySelector('.version');
-  if (version) version.textContent = 'v1.9.1 · Known-Good 8082 Shape + Proven Paint';
+  if (version) version.textContent = 'v1.9.2 · Windows UTF-8 Paint Fix';
 }
 
 function showProvider(config) {

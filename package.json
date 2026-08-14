@@ -1,7 +1,7 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.9.1",
-  "description": "Nexa 3D Worker Local 1.9.1: known-good Hunyuan path \u2014 persistent Shape-only 8082 plus the proven low-VRAM Hunyuan Paint Turbo sequence.",
+  "version": "1.9.2",
+  "description": "Nexa 3D Worker Local 1.9.2: Windows UTF-8 console fix for the proven Hunyuan Paint stage; Hunyuan3D-2mv Shape and Paint generation settings unchanged.",
   "main": "hunyuan-main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",

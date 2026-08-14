@@ -1,18 +1,26 @@
-NEXA 3D WORKER LOCAL 1.9.1 — KNOWN-GOOD PIPELINE
+NEXA 3D WORKER LOCAL 1.9.2 - WINDOWS UTF-8 PAINT FIX
 
-This update removes the unproven 1.9.0 idea of loading Shape + Paint together before 8082 becomes ready.
+Confirmed failure from Worker 1.9.1:
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192'
+in scripts/hunyuan_paint_proven.py while printing:
+Front -> Left -> Back -> Right
 
-Pipeline:
-1. Start the same Hunyuan3D-2mv Gradio Shape engine on 127.0.0.1:8082 with --disable_tex.
-2. Keep Shape loaded persistently.
-3. Send Front/Back/Left/Right through the exact Shape preset: Remove Background ON, Randomize Seed ON, 30 steps, CFG 5.0, Octree 256, Chunks 8000.
-4. Export white_mesh.glb.
-5. Launch the exact proven Paint sequence: reload GLB, original RGBA Front -> Left -> Back -> Right, tencent/Hunyuan3D-2 / hunyuan3d-paint-v2-0-turbo, enable_model_cpu_offload(), export final.glb.
+What this update changes:
+- Forces PYTHONUTF8=1 for Hunyuan child processes.
+- Forces PYTHONIOENCODING=utf-8 for Hunyuan child processes.
+- Reconfigures Python stdout/stderr to UTF-8 with replacement fallback.
+- Removes Unicode arrow characters from Paint runtime messages.
+- Bumps Worker version to 1.9.2.
 
-Repairs:
-- If 8082 exits during startup, Worker fails immediately and includes the last engine output. It no longer waits 20 minutes after a dead process.
-- 8082 startup does not load Paint.
-- Removes the 1.9.0 Paint-in-Gradio API block when applying the new Shape API.
-- No xatlas replacement, no Blender texture engine, no mesh reduction, no Face Polish, no sharpen.
-- No Hunyuan/CUDA/PyTorch/model reinstall.
-- Page 2.2.3 does not need another update.
+What this update DOES NOT change:
+- Hunyuan3D-2mv Shape settings.
+- Remove Background / Randomize Seed.
+- 30 steps / CFG 5.0 / Octree 256 / Chunks 8000.
+- Four-view Shape order.
+- Hunyuan Paint Turbo model/subfolder.
+- CPU offload.
+- Original RGBA Front/Left/Back/Right Paint input.
+- Website/public_html.
+- CUDA, PyTorch, Hunyuan models, or local environment.
+
+This is intentionally a narrow repair of the exact Windows encoding crash.

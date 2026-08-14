@@ -4,6 +4,14 @@ import sys
 import time
 from pathlib import Path
 
+# Windows Electron/Node can launch Python with a legacy cp1252 stdio encoding.
+# Force UTF-8 before any progress message so logging can never abort Paint.
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
 
 def backup_once(path: Path):
     backup = path.with_suffix(path.suffix + '.before_low_vram_fix.bak')
@@ -71,7 +79,7 @@ def main():
     from PIL import Image
     from hy3dgen.texgen import Hunyuan3DPaintPipeline
 
-    progress(65, 'Loading original RGBA references', 'Front → Left → Back → Right')
+    progress(65, 'Loading original RGBA references', 'Front -> Left -> Back -> Right')
     images = [Image.open(path).convert('RGBA') for _, path in refs if path]
 
     progress(67, 'Loading white_mesh.glb', 'Reloading the exported Shape mesh before Paint.')
@@ -87,7 +95,7 @@ def main():
     pipe.enable_model_cpu_offload()
     torch.cuda.empty_cache()
 
-    progress(76, 'Hunyuan Paint Multi-View', 'Running original RGBA Front → Left → Back → Right.')
+    progress(76, 'Hunyuan Paint Multi-View', 'Running original RGBA Front -> Left -> Back -> Right.')
     started = time.time()
     textured_mesh = pipe(mesh, image=images)
     elapsed = time.time() - started

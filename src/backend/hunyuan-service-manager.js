@@ -150,7 +150,9 @@ class HunyuanServiceManager {
       TRANSFORMERS_CACHE: path.join(cache, 'transformers'),
       TORCH_HOME: path.join(cache, 'torch'),
       TEMP: temp,
-      TMP: temp
+      TMP: temp,
+      PYTHONUTF8: '1',
+      PYTHONIOENCODING: 'utf-8'
     };
 
     this.lastExit = null;
@@ -312,7 +314,7 @@ class HunyuanServiceManager {
 
       const ticker = setInterval(() => {
         if (paintStarted) {
-          progressCb(76, 'Hunyuan Paint Multi-View', 'Paint is still active · original RGBA Front → Left → Back → Right.').catch(() => {});
+          progressCb(76, 'Hunyuan Paint Multi-View', 'Paint is still active - original RGBA Front -> Left -> Back -> Right.').catch(() => {});
         }
       }, 15000);
 
