@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const { NexaWorker } = require('./nexa-worker');
 const { HunyuanServiceManager } = require('./hunyuan-service-manager');
 
-const VERSION = '1.9.3';
+const VERSION = '1.9.4';
 
 async function validateGlb(file) {
   const buffer = await fsp.readFile(file);
@@ -48,7 +48,7 @@ class HunyuanNexaWorker extends NexaWorker {
 
     return {
       ...result,
-      message: 'Worker started. Hunyuan3D-2mv Shape warms on 8082; each job now shuts Shape down before loading Paint Turbo to avoid VRAM conflicts.'
+      message: 'Worker started. Hunyuan3D-2mv Shape warms on 8082; Shape remains untouched and Safe 384 can enhance textures after the handoff to Paint Turbo.'
     };
   }
 
@@ -78,6 +78,21 @@ class HunyuanNexaWorker extends NexaWorker {
       version: VERSION
     });
     return data.job || null;
+  }
+
+  extractQualityPlan(job) {
+    const payload = (job && typeof job.payload === 'object' && job.payload) || (() => {
+      try { return job?.payload_json ? JSON.parse(job.payload_json) : {}; } catch { return {}; }
+    })() || {};
+    const paint = payload.paint_parameters || {};
+    return {
+      objectType: String(payload.object_type || 'auto'),
+      safeTextureBoost: Boolean(paint.smart_reference_preprocess),
+      textureInputBoost: String(paint.texture_input_boost || 'off'),
+      facePriority: Boolean(paint.front_face_priority),
+      finalTexturePolish: Boolean(paint.final_texture_polish),
+      protectShapePipeline: paint.protect_shape_pipeline !== false
+    };
   }
 
   async generateWithProvider(image, outputDir, payload, progressCb) {
@@ -122,7 +137,9 @@ class HunyuanNexaWorker extends NexaWorker {
         { name: 'front', file: frontImage },
         ...extraViews.map(v => ({ name: v.name, file: v.image }))
       ];
-      await this.progress(job, 11, 'References ready', `${views.length} reference views downloaded. Using 8082 Shape + proven Paint.`);
+      const qualityPlan = this.extractQualityPlan(job);
+      const qualityLabel = qualityPlan.textureInputBoost === 'safe_384' ? 'Using 8082 Shape + Safe 384 Paint assist.' : 'Using 8082 Shape + proven Paint.';
+      await this.progress(job, 11, 'References ready', `${views.length} reference views downloaded. ${qualityLabel}`);
 
       const mesh = await this.hunyuanService.generateShape({
         views,
@@ -138,6 +155,7 @@ class HunyuanNexaWorker extends NexaWorker {
         mesh,
         views,
         outputDir,
+        qualityPlan,
         progressCb: (value, stage, message) => this.progress(job, value, stage, message)
       });
 

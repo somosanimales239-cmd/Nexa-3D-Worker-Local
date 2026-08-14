@@ -1,31 +1,23 @@
-NEXA 3D WORKER LOCAL 1.9.3 - SHAPE TO PAINT VRAM HANDOFF
+Nexa 3D Worker Local 1.9.4 - Safe Texture Quality Boost
 
-Confirmed problem in 1.9.2:
-- Shape completed successfully on 8082 and exported white_mesh.glb.
-- Worker then launched Hunyuan Paint Turbo while the 8082 Shape process was still alive.
-- On the GTX 1070 Ti workflow this could crash while loading Paint with Windows exit code 3221225477 (0xC0000005 access violation).
+Goal
+- Keep the known-good 127.0.0.1:8082 Shape workflow untouched.
+- Add optional texture-only quality improvement after Shape handoff.
 
-What 1.9.3 changes:
-- After generateShape() completes, Nexa now stops the 8082 Shape process before loading Paint.
-- Worker waits until 127.0.0.1:8082 is actually down, then waits a little longer for release, and only then starts the proven Paint pipeline.
-- The proven Paint subprocess now also gets PYTHONUTF8=1 and PYTHONIOENCODING=utf-8.
+What changed
+1) Shape path is unchanged.
+2) Worker now reads texture-quality flags from the Nexa page payload.
+3) Proven Paint can optionally run:
+   - smart reference preprocess,
+   - Safe 384 texture input boost,
+   - front-face priority for characters,
+   - conservative final texture polish.
+4) Existing successful low-VRAM CPU-offload Paint sequence remains the base.
 
-What 1.9.3 does NOT change:
-- public_html / page update: NO CHANGE
-- Hunyuan3D-2mv shape settings: unchanged
-- 30 steps / CFG 5.0 / Octree 256 / Chunks 8000: unchanged
-- Remove Background / Randomize Seed: unchanged
-- Paint Turbo model: unchanged
-- CPU offload: unchanged
-- Input order Front -> Left -> Back -> Right: unchanged
-- CUDA / PyTorch / Hunyuan installation: unchanged
-
-Expected flow now:
-56%  8082 Shape complete
-58%  Releasing Hunyuan Shape GPU
-59%  Shape engine released
-60%  Starting proven Hunyuan Paint
-...
-94%  Exporting final GLB
-97%  Validating final Hunyuan GLB
-100% Completed
+Files included
+- src/backend/hunyuan-nexa-worker.js
+- src/backend/hunyuan-service-manager.js
+- scripts/hunyuan_paint_proven.py
+- VERSION.txt
+- package.json
+- nexa.project.json

@@ -1,10 +1,11 @@
 {
     "name": "Nexa 3D Worker Local",
-    "version": "1.9.3",
-    "application_version": "1.9.3",
+    "version": "1.9.4",
+    "application_version": "1.9.4",
     "type": "electron-desktop",
     "platform": "windows-x64",
     "description": "Shape/paint VRAM handoff fix: after white_mesh.glb is created, Nexa stops the persistent 8082 Shape process, waits for the GPU/port to release, then launches the proven Hunyuan Paint Turbo pipeline.",
-    "workspace_revision": "1.0.33",
-    "updated_at": "2026-08-14 15:55:00"
+    "workspace_revision": "1.0.34",
+    "updated_at": "2026-08-14 17:29:18",
+    "releaseName": "safe-texture-quality-boost"
 }

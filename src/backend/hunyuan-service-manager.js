@@ -289,7 +289,7 @@ class HunyuanServiceManager {
     throw new Error('8082 Shape process did not shut down cleanly before Paint.');
   }
 
-  async runProvenPaint({ mesh, views, outputDir, progressCb = async () => {} }) {
+  async runProvenPaint({ mesh, views, outputDir, qualityPlan = {}, progressCb = async () => {} }) {
     const cfg = this.config();
     const python = path.resolve(String(cfg.hunyuan3d_local_python || ''));
     const root = path.resolve(String(cfg.hunyuan3d_local_root || ''));
@@ -302,8 +302,13 @@ class HunyuanServiceManager {
       '--root', root,
       '--mesh', mesh,
       '--output', path.join(outputDir, 'final.glb'),
-      '--front', byName.get('front') || ''
+      '--front', byName.get('front') || '',
+      '--object-type', String(qualityPlan.objectType || 'auto'),
+      '--texture-input-boost', String(qualityPlan.textureInputBoost || 'off')
     ];
+    if (qualityPlan.safeTextureBoost) args.push('--smart-reference-preprocess');
+    if (qualityPlan.facePriority) args.push('--front-face-priority');
+    if (qualityPlan.finalTexturePolish) args.push('--final-texture-polish');
     for (const name of ['left', 'back', 'right']) {
       const file = byName.get(name);
       if (file) args.push(`--${name}`, file);
@@ -324,7 +329,8 @@ class HunyuanServiceManager {
       PYTHONIOENCODING: 'utf-8'
     };
 
-    await progressCb(60, 'Starting proven Hunyuan Paint', 'Using the same low-VRAM Paint Turbo sequence that already succeeded locally.');
+    const boostLabel = qualityPlan.textureInputBoost === 'safe_384' ? 'Safe 384 texture boost enabled.' : 'Safe texture boost disabled.';
+    await progressCb(60, 'Starting proven Hunyuan Paint', `Using the same low-VRAM Paint Turbo sequence that already succeeded locally. ${boostLabel}`);
 
     return await new Promise((resolve, reject) => {
       const child = spawn(python, args, { cwd: root, env, windowsHide: true, shell: false });
