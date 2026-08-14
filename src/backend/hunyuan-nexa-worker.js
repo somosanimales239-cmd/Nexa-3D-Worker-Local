@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const { NexaWorker } = require('./nexa-worker');
 const { HunyuanServiceManager } = require('./hunyuan-service-manager');
 
-const VERSION = '1.9.1';
+const VERSION = '1.9.3';
 
 async function validateGlb(file) {
   const buffer = await fsp.readFile(file);
@@ -48,7 +48,7 @@ class HunyuanNexaWorker extends NexaWorker {
 
     return {
       ...result,
-      message: 'Worker started. Hunyuan3D-2mv Shape is warming on 8082; Paint loads only after Shape is ready.'
+      message: 'Worker started. Hunyuan3D-2mv Shape warms on 8082; each job now shuts Shape down before loading Paint Turbo to avoid VRAM conflicts.'
     };
   }
 
@@ -87,6 +87,7 @@ class HunyuanNexaWorker extends NexaWorker {
     }
     const views = [{ name: 'front', file: image }];
     const mesh = await this.hunyuanService.generateShape({ views, outputDir, progressCb });
+    await this.hunyuanService.stopShapeBeforePaint(progressCb);
     return this.hunyuanService.runProvenPaint({ mesh, views, outputDir, progressCb });
   }
 
@@ -128,6 +129,10 @@ class HunyuanNexaWorker extends NexaWorker {
         outputDir,
         progressCb: (value, stage, message) => this.progress(job, value, stage, message)
       });
+
+      await this.hunyuanService.stopShapeBeforePaint(
+        (value, stage, message) => this.progress(job, value, stage, message)
+      );
 
       const finalGlb = await this.hunyuanService.runProvenPaint({
         mesh,

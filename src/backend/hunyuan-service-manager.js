@@ -271,6 +271,24 @@ class HunyuanServiceManager {
     throw new Error('8082 Shape generation exceeded 15 minutes and was aborted by Nexa watchdog.');
   }
 
+
+  async stopShapeBeforePaint(progressCb = async () => {}) {
+    await progressCb(58, 'Releasing Hunyuan Shape GPU', 'Stopping 8082 Shape so Paint Turbo can load without competing for VRAM.');
+    await this.stop();
+
+    const started = Date.now();
+    while (Date.now() - started < 30000) {
+      if (!(await this.rootResponds())) {
+        await sleep(2500);
+        await progressCb(59, 'Shape engine released', '127.0.0.1:8082 is down. Starting proven Paint next.');
+        return;
+      }
+      await sleep(1000);
+    }
+
+    throw new Error('8082 Shape process did not shut down cleanly before Paint.');
+  }
+
   async runProvenPaint({ mesh, views, outputDir, progressCb = async () => {} }) {
     const cfg = this.config();
     const python = path.resolve(String(cfg.hunyuan3d_local_python || ''));
@@ -301,7 +319,9 @@ class HunyuanServiceManager {
       TRANSFORMERS_CACHE: path.join(cache, 'transformers'),
       TORCH_HOME: path.join(cache, 'torch'),
       TEMP: temp,
-      TMP: temp
+      TMP: temp,
+      PYTHONUTF8: '1',
+      PYTHONIOENCODING: 'utf-8'
     };
 
     await progressCb(60, 'Starting proven Hunyuan Paint', 'Using the same low-VRAM Paint Turbo sequence that already succeeded locally.');

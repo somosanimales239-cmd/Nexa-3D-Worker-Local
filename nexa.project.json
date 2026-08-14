@@ -1,10 +1,10 @@
 {
     "name": "Nexa 3D Worker Local",
-    "version": "1.9.2",
-    "application_version": "1.9.2",
+    "version": "1.9.3",
+    "application_version": "1.9.3",
     "type": "electron-desktop",
     "platform": "windows-x64",
-    "description": "Windows CP1252/UTF-8 logging repair. The exact 1.9.1 Hunyuan Shape + proven Paint pipeline is unchanged; only Python child-process encoding/logging is hardened.",
-    "workspace_revision": "1.0.32",
-    "updated_at": "2026-08-14 01:23:34"
+    "description": "Shape/paint VRAM handoff fix: after white_mesh.glb is created, Nexa stops the persistent 8082 Shape process, waits for the GPU/port to release, then launches the proven Hunyuan Paint Turbo pipeline.",
+    "workspace_revision": "1.0.33",
+    "updated_at": "2026-08-14 15:55:00"
 }

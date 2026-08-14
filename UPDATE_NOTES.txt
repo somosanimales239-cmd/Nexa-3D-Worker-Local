@@ -1,26 +1,31 @@
-NEXA 3D WORKER LOCAL 1.9.2 - WINDOWS UTF-8 PAINT FIX
+NEXA 3D WORKER LOCAL 1.9.3 - SHAPE TO PAINT VRAM HANDOFF
 
-Confirmed failure from Worker 1.9.1:
-UnicodeEncodeError: 'charmap' codec can't encode character '\u2192'
-in scripts/hunyuan_paint_proven.py while printing:
-Front -> Left -> Back -> Right
+Confirmed problem in 1.9.2:
+- Shape completed successfully on 8082 and exported white_mesh.glb.
+- Worker then launched Hunyuan Paint Turbo while the 8082 Shape process was still alive.
+- On the GTX 1070 Ti workflow this could crash while loading Paint with Windows exit code 3221225477 (0xC0000005 access violation).
 
-What this update changes:
-- Forces PYTHONUTF8=1 for Hunyuan child processes.
-- Forces PYTHONIOENCODING=utf-8 for Hunyuan child processes.
-- Reconfigures Python stdout/stderr to UTF-8 with replacement fallback.
-- Removes Unicode arrow characters from Paint runtime messages.
-- Bumps Worker version to 1.9.2.
+What 1.9.3 changes:
+- After generateShape() completes, Nexa now stops the 8082 Shape process before loading Paint.
+- Worker waits until 127.0.0.1:8082 is actually down, then waits a little longer for release, and only then starts the proven Paint pipeline.
+- The proven Paint subprocess now also gets PYTHONUTF8=1 and PYTHONIOENCODING=utf-8.
 
-What this update DOES NOT change:
-- Hunyuan3D-2mv Shape settings.
-- Remove Background / Randomize Seed.
-- 30 steps / CFG 5.0 / Octree 256 / Chunks 8000.
-- Four-view Shape order.
-- Hunyuan Paint Turbo model/subfolder.
-- CPU offload.
-- Original RGBA Front/Left/Back/Right Paint input.
-- Website/public_html.
-- CUDA, PyTorch, Hunyuan models, or local environment.
+What 1.9.3 does NOT change:
+- public_html / page update: NO CHANGE
+- Hunyuan3D-2mv shape settings: unchanged
+- 30 steps / CFG 5.0 / Octree 256 / Chunks 8000: unchanged
+- Remove Background / Randomize Seed: unchanged
+- Paint Turbo model: unchanged
+- CPU offload: unchanged
+- Input order Front -> Left -> Back -> Right: unchanged
+- CUDA / PyTorch / Hunyuan installation: unchanged
 
-This is intentionally a narrow repair of the exact Windows encoding crash.
+Expected flow now:
+56%  8082 Shape complete
+58%  Releasing Hunyuan Shape GPU
+59%  Shape engine released
+60%  Starting proven Hunyuan Paint
+...
+94%  Exporting final GLB
+97%  Validating final Hunyuan GLB
+100% Completed

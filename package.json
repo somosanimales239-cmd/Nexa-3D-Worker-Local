@@ -1,7 +1,7 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.9.2",
-  "description": "Nexa 3D Worker Local 1.9.2: Windows UTF-8 console fix for the proven Hunyuan Paint stage; Hunyuan3D-2mv Shape and Paint generation settings unchanged.",
+  "version": "1.9.3",
+  "description": "Nexa 3D Worker Local 1.9.3: release 8082 Shape before loading Hunyuan Paint Turbo, plus UTF-8 safe Paint subprocess environment.",
   "main": "hunyuan-main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",
