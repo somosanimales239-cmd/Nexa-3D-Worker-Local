@@ -1,16 +1,3 @@
-NEXA 3D WORKER LOCAL 1.8.3 — STARTUP / QUEUE SYNC REPAIR
+NEXA 3D WORKER LOCAL 1.9.0 — PERSISTENT HUNYUAN 8082
 
-Confirmed problem in 1.8.2:
-The website queues exact-8082 jobs under provider hunyuan3d_multiview_local, but an existing Worker installation could keep provider=stable_fast_3d in its persisted config. The Worker would then poll the stable queue while the Hunyuan job remained at 0%.
-
-Additional confirmed config bug:
-Hunyuan local root/python/cache/temp were added by the Hunyuan subclass, but the legacy ConfigStore save allow-list did not persist those new fields.
-
-1.8.3 fixes only startup/connection/provider synchronization:
-- one-time migration to hunyuan3d_multiview_local
-- Hunyuan provider remains persistent after Save
-- Hunyuan local paths remain persistent
-- Start Worker performs a real Nexa heartbeat before reporting success
-- missing Hunyuan root/Python produces an immediate visible error
-
-IMPORTANT: scripts/hunyuan_multiview_worker.py is NOT changed by this repair. The 1.8.2 exact 8082 generation settings remain untouched.
+Replaces the per-job Python runner. Nexa now uses the same local Hunyuan Gradio/FastAPI process on 127.0.0.1:8082. Shape + Paint load once and are reused. The patch is automatic and backed up. Exact Shape preset remains 30 steps / CFG 5.0 / octree 256 / chunks 8000 / Remove Background ON / Randomize Seed ON. Paint uses original RGBA Front -> Left -> Back -> Right and Paint Turbo with CPU offload. Raw white_mesh.glb is preserved. If raw geometry is above 100,000 faces, only the Paint copy is reduced to 80,000 faces to avoid the Windows high-poly xatlas stall. A safe inpainting dedup guard is applied when its expected source marker exists. A 30-minute watchdog reports failure instead of hanging for an hour. No Hunyuan/CUDA/PyTorch/model reinstall. No Stable Fast 3D. No Blender Texture Engine projection/baking. No page update is required when Nexa 3D Studio 2.2.3 is already installed.

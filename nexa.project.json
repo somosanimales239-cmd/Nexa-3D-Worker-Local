@@ -1,10 +1,10 @@
 {
     "name": "Nexa 3D Worker Local",
-    "version": "1.8.3",
-    "application_version": "1.8.3",
+    "version": "1.9.0",
+    "application_version": "1.9.0",
     "type": "electron-desktop",
     "platform": "windows-x64",
-    "description": "Startup/provider queue synchronization repair. Exact 8082 Python generation logic is unchanged from 1.8.2.",
-    "workspace_revision": "1.0.29",
-    "updated_at": "2026-08-13 21:47:59"
+    "description": "Persistent Hunyuan 8082 architecture: same local Hunyuan3D-2mv/Gradio engine is patched with Nexa API endpoints, loaded once, and reused across jobs. Includes Windows texture-stage performance guards.",
+    "workspace_revision": "1.0.30",
+    "updated_at": "2026-08-14 00:02:43"
 }

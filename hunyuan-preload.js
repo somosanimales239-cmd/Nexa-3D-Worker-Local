@@ -6,7 +6,7 @@ function ensureHunyuanUi() {
   if (provider && !provider.querySelector('option[value="hunyuan3d_multiview_local"]')) {
     const option = document.createElement('option');
     option.value = 'hunyuan3d_multiview_local';
-    option.textContent = 'Hunyuan3D 2mv — Exact 8082 Local';
+    option.textContent = 'Hunyuan3D 2mv — Persistent 8082';
     provider.insertBefore(option, provider.firstChild);
   }
   const legacyStatus = document.getElementById('hunyuanStatus');
@@ -15,14 +15,14 @@ function ensureHunyuanUi() {
     const card = document.createElement('article');
     card.className = 'card engine-card';
     card.innerHTML = `
-      <div class="engine-title"><div class="engine-logo alt">MV</div><div><span class="pill good">RECOMMENDED</span><h3>Hunyuan3D 2mv — Exact 8082 Local</h3>
-      <p>Uses the same 8082 shape preset: Remove Background ON, Randomize Seed ON, 30 steps, CFG 5.0, octree 256, chunks 8000. Then reloads the raw GLB and runs the proven original-RGBA Front → Left → Back → Right Hunyuan Paint Turbo pass. Gradio does not need to be open.</p></div></div>
+      <div class="engine-title"><div class="engine-logo alt">MV</div><div><span class="pill good">RECOMMENDED</span><h3>Hunyuan3D 2mv — Persistent 8082</h3>
+      <p>Worker 1.9 keeps the same local Hunyuan page/engine alive on 127.0.0.1:8082. Shape and Paint load once instead of once per job. Exact Shape preset: 30 steps, CFG 5.0, octree 256, chunks 8000. Paint uses original RGBA Front → Left → Back → Right with a Windows high-poly safety guard.</p></div></div>
       <div class="engine-status" id="hunyuanLocalStatus">Checking…</div>
       <div class="license-note"><b>Local paths</b><br>D:\\N3D\\hunyuan2mv<br>D:\\N3D\\hunyuan2mv\\.venv\\Scripts\\python.exe<br>D:\\N3D\\HunyuanCache<br>D:\\N3D\\temp</div>`;
     legacyCard.parentNode.insertBefore(card, legacyCard);
   }
   const version = document.querySelector('.version');
-  if (version) version.textContent = 'v1.8.3 · Startup + Queue Sync Fix · Exact 8082';
+  if (version) version.textContent = 'v1.9.0 · Persistent Hunyuan 8082 · No per-job model reload';
 }
 
 function showProvider(config) {

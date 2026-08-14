@@ -17,7 +17,8 @@ class HunyuanConfigStore extends ConfigStore {
       hunyuan3d_local_root: String(process.env.NEXA_HUNYUAN_ROOT || 'D:\\N3D\\hunyuan2mv'),
       hunyuan3d_local_python: String(process.env.NEXA_HUNYUAN_PYTHON || 'D:\\N3D\\hunyuan2mv\\.venv\\Scripts\\python.exe'),
       hunyuan3d_cache_dir: String(process.env.NEXA_HUNYUAN_CACHE || 'D:\\N3D\\HunyuanCache'),
-      hunyuan3d_temp_dir: String(process.env.NEXA_HUNYUAN_TEMP || 'D:\\N3D\\temp')
+      hunyuan3d_temp_dir: String(process.env.NEXA_HUNYUAN_TEMP || 'D:\\N3D\\temp'),
+      hunyuan3d_service_url: String(process.env.NEXA_HUNYUAN_SERVICE_URL || 'http://127.0.0.1:8082')
     };
   }
 
@@ -36,7 +37,8 @@ class HunyuanConfigStore extends ConfigStore {
       'hunyuan3d_local_root',
       'hunyuan3d_local_python',
       'hunyuan3d_cache_dir',
-      'hunyuan3d_temp_dir'
+      'hunyuan3d_temp_dir',
+      'hunyuan3d_service_url'
     ]) {
       if (!String(current[key] || '').trim()) {
         current[key] = defaults[key];
@@ -69,7 +71,8 @@ class HunyuanConfigStore extends ConfigStore {
       'hunyuan3d_local_root',
       'hunyuan3d_local_python',
       'hunyuan3d_cache_dir',
-      'hunyuan3d_temp_dir'
+      'hunyuan3d_temp_dir',
+      'hunyuan3d_service_url'
     ]) {
       const supplied = Object.prototype.hasOwnProperty.call(input || {}, key)
         ? String(input[key] || '').trim()
