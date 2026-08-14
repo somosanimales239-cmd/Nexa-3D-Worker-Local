@@ -1,3 +1,18 @@
-NEXA 3D WORKER LOCAL 1.9.0 — PERSISTENT HUNYUAN 8082
+NEXA 3D WORKER LOCAL 1.9.1 — KNOWN-GOOD PIPELINE
 
-Replaces the per-job Python runner. Nexa now uses the same local Hunyuan Gradio/FastAPI process on 127.0.0.1:8082. Shape + Paint load once and are reused. The patch is automatic and backed up. Exact Shape preset remains 30 steps / CFG 5.0 / octree 256 / chunks 8000 / Remove Background ON / Randomize Seed ON. Paint uses original RGBA Front -> Left -> Back -> Right and Paint Turbo with CPU offload. Raw white_mesh.glb is preserved. If raw geometry is above 100,000 faces, only the Paint copy is reduced to 80,000 faces to avoid the Windows high-poly xatlas stall. A safe inpainting dedup guard is applied when its expected source marker exists. A 30-minute watchdog reports failure instead of hanging for an hour. No Hunyuan/CUDA/PyTorch/model reinstall. No Stable Fast 3D. No Blender Texture Engine projection/baking. No page update is required when Nexa 3D Studio 2.2.3 is already installed.
+This update removes the unproven 1.9.0 idea of loading Shape + Paint together before 8082 becomes ready.
+
+Pipeline:
+1. Start the same Hunyuan3D-2mv Gradio Shape engine on 127.0.0.1:8082 with --disable_tex.
+2. Keep Shape loaded persistently.
+3. Send Front/Back/Left/Right through the exact Shape preset: Remove Background ON, Randomize Seed ON, 30 steps, CFG 5.0, Octree 256, Chunks 8000.
+4. Export white_mesh.glb.
+5. Launch the exact proven Paint sequence: reload GLB, original RGBA Front -> Left -> Back -> Right, tencent/Hunyuan3D-2 / hunyuan3d-paint-v2-0-turbo, enable_model_cpu_offload(), export final.glb.
+
+Repairs:
+- If 8082 exits during startup, Worker fails immediately and includes the last engine output. It no longer waits 20 minutes after a dead process.
+- 8082 startup does not load Paint.
+- Removes the 1.9.0 Paint-in-Gradio API block when applying the new Shape API.
+- No xatlas replacement, no Blender texture engine, no mesh reduction, no Face Polish, no sharpen.
+- No Hunyuan/CUDA/PyTorch/model reinstall.
+- Page 2.2.3 does not need another update.

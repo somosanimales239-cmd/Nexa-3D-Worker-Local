@@ -1,7 +1,7 @@
 {
   "name": "nexa-3d-worker-local",
-  "version": "1.9.0",
-  "description": "Nexa 3D Worker Local 1.9.0: persistent Hunyuan3D-2mv + Paint on 127.0.0.1:8082; models warm once, exact 8082 shape preset, Windows texture hang guard.",
+  "version": "1.9.1",
+  "description": "Nexa 3D Worker Local 1.9.1: known-good Hunyuan path \u2014 persistent Shape-only 8082 plus the proven low-VRAM Hunyuan Paint Turbo sequence.",
   "main": "hunyuan-main.js",
   "author": "Nexa App Builder Pro",
   "license": "UNLICENSED",
@@ -37,7 +37,8 @@
     ],
     "asarUnpack": [
       "scripts/hunyuan_multiview_worker.py",
-      "scripts/patch_hunyuan_gradio_api.py"
+      "scripts/patch_hunyuan_shape_api.py",
+      "scripts/hunyuan_paint_proven.py"
     ],
     "win": {
       "target": [
